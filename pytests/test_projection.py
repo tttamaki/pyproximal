@@ -6,7 +6,11 @@ from pylops.basicoperators import Identity
 from pyproximal.utils import moreau
 from pyproximal.proximal import Box, EuclideanBall, L0Ball, L10Ball, L1Ball, \
     NuclearBall, Simplex, AffineSet, Hankel, HalfSpace, DykstraProjComposite
-from pyproximal.projection import EuclideanBallProj, HalfSpaceProj
+from pyproximal.projection import (
+    EuclideanBallProj,
+    HalfSpaceProj,
+    BoxProj,
+)
 
 par1 = {'nx': 10, 'ny': 8, 'axis': 0, 'dtype': 'float32'}  # even float32 dir0
 par2 = {'nx': 11, 'ny': 8, 'axis': 1, 'dtype': 'float64'}  # odd float64 dir1
@@ -73,7 +77,8 @@ def test_L10Ball(par):
     np.random.seed(10)
 
     l0 = L10Ball(3, 1)
-    x = np.random.normal(0., 1., (3, par['nx'])).astype(par['dtype']).ravel() + 1.
+    x = np.random.normal(0., 1., (3, par['nx'])).astype(
+        par['dtype']).ravel() + 1.
 
     # evaluation
     assert l0(x) == False
@@ -229,22 +234,29 @@ def test_HalfSpace(par):
 def test_DykstraProjComposite(par):
     """DykstraProjComposite projection and proximal/dual proximal of related indicator
     """
-    np.random.seed(10)
+    rng = np.random.default_rng(10)
 
-    w = np.random.normal(0., 1., par['nx']).astype(par['dtype'])
-    b = np.random.normal(0., 1.)
+    w = rng.normal(0., 1., par['nx']).astype(par['dtype'])
+    b = rng.normal(0., 1.)
     half_space = HalfSpaceProj(w, b)
 
-    eucl = EuclideanBallProj(np.zeros(par['nx']), 1.)
+    eucl = EuclideanBallProj(np.zeros(par['nx']), rng.uniform(0.1, 1.0))
 
-    dykstra_proj_composite = DykstraProjComposite(
-        projections=[
-            half_space,
-            eucl,
-        ])
+    box = BoxProj(
+        rng.uniform(-1.0, -0.1, par['nx']),
+        rng.uniform(0.1, 1.0, par['nx'])
+    )
 
-    x = np.random.normal(0., 1., par['nx']).astype(par['dtype'])
+    x = rng.normal(0., 1., par['nx']).astype(par['dtype'])
+
+    dykstra_proj_composite1 = DykstraProjComposite([eucl, box])
+    dykstra_proj_composite2 = DykstraProjComposite([eucl, half_space])
+    dykstra_proj_composite3 = DykstraProjComposite([half_space, box])
+    dykstra_proj_composite4 = DykstraProjComposite([eucl])
 
     # prox / dualprox
     tau = 2.
-    assert moreau(dykstra_proj_composite, x, tau)
+    assert moreau(dykstra_proj_composite1, x, tau)
+    assert moreau(dykstra_proj_composite2, x, tau)
+    assert moreau(dykstra_proj_composite3, x, tau)
+    assert moreau(dykstra_proj_composite4, x, tau)
