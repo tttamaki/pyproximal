@@ -12,7 +12,7 @@ class DykstraProjComposite(ProxOperator):
     def __init__(
         self,
         projections: List[Callable[[NDArray], NDArray]],
-        max_iter: int = 50
+        max_iter: int = 10
     ) -> None:
         super().__init__(None, False)
         self.projections = projections

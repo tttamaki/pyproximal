@@ -8,7 +8,7 @@ class DykstraProjCompositeProj():
     def __init__(
             self,
             projections: List[Callable[[NDArray], NDArray]],
-            max_iter: int = 50
+            max_iter: int = 10
     ) -> None:
         self.projections = projections
         self.max_iter = max_iter
