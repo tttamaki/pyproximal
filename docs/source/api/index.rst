@@ -29,6 +29,7 @@ Orthogonal projections
     L1BallProj
     NuclearBallProj
     SimplexProj
+    DykstraProjCompositeProj
 
 Proximal operators
 ------------------

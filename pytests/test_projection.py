@@ -5,7 +5,8 @@ from numpy.testing import assert_array_almost_equal
 from pylops.basicoperators import Identity
 from pyproximal.utils import moreau
 from pyproximal.proximal import Box, EuclideanBall, L0Ball, L10Ball, L1Ball, \
-    NuclearBall, Simplex, AffineSet, Hankel, HalfSpace
+    NuclearBall, Simplex, AffineSet, Hankel, HalfSpace, DykstraProjComposite
+from pyproximal.projection import EuclideanBallProj, HalfSpaceProj
 
 par1 = {'nx': 10, 'ny': 8, 'axis': 0, 'dtype': 'float32'}  # even float32 dir0
 par2 = {'nx': 11, 'ny': 8, 'axis': 1, 'dtype': 'float64'}  # odd float64 dir1
@@ -222,3 +223,28 @@ def test_HalfSpace(par):
     # prox / dualprox
     tau = 2.
     assert moreau(half_space, x, tau)
+
+
+@pytest.mark.parametrize("par", [(par1), (par2)])
+def test_DykstraProjComposite(par):
+    """DykstraProjComposite projection and proximal/dual proximal of related indicator
+    """
+    np.random.seed(10)
+
+    w = np.random.normal(0., 1., par['nx']).astype(par['dtype'])
+    b = np.random.normal(0., 1.)
+    half_space = HalfSpaceProj(w, b)
+
+    eucl = EuclideanBallProj(np.zeros(par['nx']), 1.)
+
+    dykstra_proj_composite = DykstraProjComposite(
+        projections=[
+            half_space,
+            eucl,
+        ])
+
+    x = np.random.normal(0., 1., par['nx']).astype(par['dtype'])
+
+    # prox / dualprox
+    tau = 2.
+    assert moreau(dykstra_proj_composite, x, tau)
