@@ -253,6 +253,7 @@ def test_DykstraProjComposite(par):
     dykstra_proj_composite2 = DykstraProjComposite([eucl, half_space])
     dykstra_proj_composite3 = DykstraProjComposite([half_space, box])
     dykstra_proj_composite4 = DykstraProjComposite([eucl])
+    dykstra_proj_composite5 = DykstraProjComposite([eucl, box, half_space])
 
     # prox / dualprox
     tau = 2.
@@ -260,3 +261,4 @@ def test_DykstraProjComposite(par):
     assert moreau(dykstra_proj_composite2, x, tau)
     assert moreau(dykstra_proj_composite3, x, tau)
     assert moreau(dykstra_proj_composite4, x, tau)
+    assert moreau(dykstra_proj_composite5, x, tau)
