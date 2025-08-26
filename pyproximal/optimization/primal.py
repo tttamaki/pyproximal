@@ -1099,8 +1099,13 @@ def ADMM(
         head = "   Itn       x[0]          f           g       J = f + g"
         print(head)
 
-    x = x0.copy()
-    u = z = np.zeros_like(x)
+    if gfirst:
+        x = x0.copy()
+        u = z = np.zeros_like(x0)
+    else:
+        z = x0.copy()
+        u = x = np.zeros_like(x0)
+
     for iiter in range(niter):
         if gfirst:
             z = proxg.prox(x + u, tau)
