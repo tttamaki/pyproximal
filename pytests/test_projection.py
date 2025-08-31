@@ -2,17 +2,6 @@ import numpy as np
 import pytest
 from numpy.testing import assert_array_almost_equal
 from pylops.basicoperators import Identity
-<< << << < HEAD
-from pyproximal.utils import moreau
-from pyproximal.proximal import Box, EuclideanBall, L0Ball, L10Ball, L1Ball, \
-    NuclearBall, Simplex, AffineSet, Hankel, HalfSpace, DykstraProjComposite
-from pyproximal.projection import (
-    EuclideanBallProj,
-    HalfSpaceProj,
-    BoxProj,
-)
-== == == =
->>>>>> > dev
 
 from pyproximal.proximal import (
     AffineSet,
@@ -25,8 +14,14 @@ from pyproximal.proximal import (
     L10Ball,
     NuclearBall,
     Simplex,
+    DykstraProjComposite,
 )
 from pyproximal.utils import moreau
+from pyproximal.projection import (
+    EuclideanBallProj,
+    HalfSpaceProj,
+    BoxProj,
+)
 
 par1 = {"nx": 10, "ny": 8, "axis": 0, "dtype": "float32"}  # even float32 dir0
 par2 = {"nx": 11, "ny": 8, "axis": 1, "dtype": "float64"}  # odd float64 dir1
