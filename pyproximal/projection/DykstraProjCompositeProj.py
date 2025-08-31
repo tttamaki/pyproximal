@@ -49,6 +49,11 @@ class DykstraProjCompositeProj():
         * :math:`u_i^{(k)} = P_i(u_{i-1}^{(k)} + z_i^{(k-1)})`
         * :math:`z_i^{(k)} = u_{i-1}^{(k)} + z_i^{(k-1)} - u_i^{(k)}`
 
+    Note the this is the proximal operator of the corresponding
+    indicator function
+    (see :class:`pyproximal.DykstraProjComposite` for details.
+
+
 
     .. [1] Bauschke, H.H., Borwein, J.M., 1994. Dykstra's Alternating
         Projection Algorithm for Two Sets. Journal of Approximation Theory 79,
