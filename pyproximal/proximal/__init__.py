@@ -41,7 +41,8 @@ The subpackage proximal contains a number of proximal operators:
     Hankel                          Hankel indicator
     QuadraticEnvelopeRankL2         The quadratic envelope of the rank function with an L2 misfit term
     HalfSpace                       Half space indicator
-    DykstraProjCompositeProj        indicator of projection onto a union of given sets
+    DykstrasProjectionProx          indicator of projection onto a union of given sets
+    DykstraLikeProximal             Dykstra-like proximal algorithm
 """
 
 from .Box import *
@@ -70,7 +71,8 @@ from .QuadraticEnvelope import *
 from .SingularValuePenalty import *
 from .Hankel import *
 from .HalfSpace import *
-from .DykstraProjComposite import *
+from .DykstrasProjectionProx import *
+from .DykstraLikeProximal import *
 
 
 __all__ = [
@@ -111,5 +113,6 @@ __all__ = [
     "QuadraticEnvelopeRankL2",
     "Hankel",
     "HalfSpace",
-    "DykstraProjComposite",
+    "DykstrasProjectionProx",
+    "DykstraLikeProximal",
 ]

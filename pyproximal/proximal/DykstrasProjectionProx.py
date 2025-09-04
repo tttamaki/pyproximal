@@ -2,12 +2,11 @@ from typing import List, Callable
 import numpy as np
 from pylops.utils.typing import NDArray
 
-from pyproximal.ProxOperator import _check_tau
-from pyproximal import ProxOperator
-from pyproximal.projection import DykstraProjCompositeProj
+from pyproximal.ProxOperator import ProxOperator, _check_tau
+from pyproximal.projection import DykstrasProjection
 
 
-class DykstraProjComposite(ProxOperator):
+class DykstrasProjectionProx(ProxOperator):
     r"""The proximal operator corresponding to the convex projection to the
     intersection of convex sets using Dykstra's algorithm.
 
@@ -22,22 +21,24 @@ class DykstraProjComposite(ProxOperator):
     -----
     As the intersection of convex sets is an indicator function,
     the proximal operator corresponds to its orthogonal projection
-    (see :class:`pyproximal.projection.DykstraProjCompositeProj` for details.
+    (see :class:`pyproximal.projection.DykstraProjCompositeProj` for details).
 
     """
 
     def __init__(
         self,
         projections: List[Callable[[NDArray], NDArray]],
-        max_iter: int = 10
+        max_iter: int = 10,
+        use_parallel: bool = False,
     ) -> None:
         super().__init__(None, False)
         self.projections = projections
         self.max_iter = max_iter
-        self.dykstra_proj_coomposite_proj = \
-            DykstraProjCompositeProj(
+        self.dykstras_projection = \
+            DykstrasProjection(
                 self.projections,
-                self.max_iter
+                self.max_iter,
+                use_parallel
             )
 
     def __call__(self, x: NDArray) -> bool:
@@ -45,4 +46,4 @@ class DykstraProjComposite(ProxOperator):
 
     @_check_tau
     def prox(self, x: NDArray, tau: float) -> NDArray:
-        return self.dykstra_proj_coomposite_proj(x)
+        return self.dykstras_projection(x)

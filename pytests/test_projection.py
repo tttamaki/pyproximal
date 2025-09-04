@@ -14,7 +14,7 @@ from pyproximal.proximal import (
     L10Ball,
     NuclearBall,
     Simplex,
-    DykstraProjComposite,
+    DykstrasProjectionProx,
 )
 from pyproximal.utils import moreau
 from pyproximal.projection import (
@@ -263,11 +263,11 @@ def test_DykstraProjComposite(par):
 
     x = rng.normal(0., 1., par['nx']).astype(par['dtype'])
 
-    dykstra_proj_composite1 = DykstraProjComposite([eucl, box])
-    dykstra_proj_composite2 = DykstraProjComposite([eucl, half_space])
-    dykstra_proj_composite3 = DykstraProjComposite([half_space, box])
-    dykstra_proj_composite4 = DykstraProjComposite([eucl])
-    dykstra_proj_composite5 = DykstraProjComposite([eucl, box, half_space])
+    dykstra_proj_composite1 = DykstrasProjectionProx([eucl, box])
+    dykstra_proj_composite2 = DykstrasProjectionProx([eucl, half_space])
+    dykstra_proj_composite3 = DykstrasProjectionProx([half_space, box])
+    dykstra_proj_composite4 = DykstrasProjectionProx([eucl])
+    dykstra_proj_composite5 = DykstrasProjectionProx([eucl, box, half_space])
 
     # prox / dualprox
     tau = 2.
