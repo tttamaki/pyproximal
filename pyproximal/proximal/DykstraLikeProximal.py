@@ -103,7 +103,7 @@ class DykstraLikeProximal(ProxOperator):
         ops: List[ProxOperator],
         max_iter: int = 10,
         use_parallel: bool = False,
-        weights: List[float] | None = None
+        weights: NDArray | List[float] | None = None
     ) -> None:
         super().__init__(None, False)
         assert len(ops) > 0
@@ -214,11 +214,15 @@ class DykstraLikeProximal(ProxOperator):
         for _ in range(self.max_iter):
             x_old = x.copy()
 
+            prox_z = [self.ops[i].prox(z[i], tau / self.w[i]) for i in range(m)]
+            # prox_z = [self.ops[i].prox(z[i], tau) for i in range(m)]
+
+            x = np.zeros_like(x)
             for i in range(m):
-                x += self.w[i] * self.ops[i].prox(z[i], tau)
+                x += self.w[i] * prox_z[i]
 
             for i in range(m):
-                z[i] = z[i] + x - self.ops[i].prox(z[i], tau)
+                z[i] = z[i] + x - prox_z[i]
 
             if np.allclose(x, x_old):
                 break
