@@ -1,3 +1,5 @@
+from typing import Dict, Any
+
 import numpy as np
 import pytest
 from numpy.testing import assert_array_almost_equal, assert_array_equal
@@ -7,6 +9,8 @@ import pyproximal
 from pyproximal.proximal import (
     L1,
     L2,
+    L21,
+    L21_plus_L1,
     Nonlinear,
     Orthogonal,
     Quadratic,
@@ -14,6 +18,7 @@ from pyproximal.proximal import (
     QuadraticEnvelopeRankL2,
     SingularValuePenalty,
     VStack,
+    DykstraLikeProximal,
 )
 from pyproximal.utils import moreau
 
@@ -253,3 +258,49 @@ def test_QuadraticEnvelopeRankL2(par, expected):
     # Check proximal operator
     tau = 0.75
     assert moreau(f, X.ravel(), tau)
+
+
+@pytest.mark.parametrize("par", [(par1), (par2)])
+def test_dykstra_like_prox(par: Dict[str, Any]) -> None:
+    """Dykstra-like proximal algorithms"""
+
+    rng = np.random.default_rng()
+
+    # check L21 + L1
+    tau = 2.0
+    x = rng.normal(0., 1., par['nx'] // 2 * 2).astype(par['dtype'])
+    rho = rng.uniform(0.0, 1.0)
+    sigma_21 = rng.uniform(0.1, 1.0)
+
+    l21_l1 = L21_plus_L1(sigma=sigma_21, rho=rho)
+
+    l1 = L1(sigma=sigma_21 * rho)
+    l21 = L21(sigma=sigma_21 * (1 - rho), ndim=par['nx'] // 2)
+    d = DykstraLikeProximal([l1, l21], max_iter=100)
+    assert moreau(d, x, tau)
+    assert np.allclose(l21_l1.prox(x, tau), d.prox(x, tau))
+
+    d = DykstraLikeProximal([l1, l21], max_iter=100, use_parallel=True)
+    assert moreau(d, x, tau)
+    assert np.allclose(l21_l1.prox(x, tau), d.prox(x, tau))
+
+    # check f1+f2+f3+f4
+    x = rng.normal(0., 1., par['nx']).astype(par['dtype'])
+    g = rng.normal(0., 1., par['nx']).astype(par['dtype'])
+    b = rng.normal(0., 1., par['nx']).astype(par['dtype'])
+    q = rng.normal(0., 1., par['nx']).astype(par['dtype'])
+    sigma_l1 = rng.uniform(0.1, 1.0)
+    sigma_l2 = rng.uniform(0.1, 1.0)
+    alpha_l2 = rng.uniform(0.1, 1.0)
+
+    l1 = L1(sigma=sigma_l1, g=g)
+    l2 = L2(sigma=sigma_l2, b=b, q=q, alpha=alpha_l2)
+
+    for prox_ops in [
+        [l1, l2],
+        [l2, l1, l2],
+        [l1, l2, l1, l21],
+        [l1, l2, l21, l21_l1],
+    ]:
+        d = DykstraLikeProximal(prox_ops, max_iter=100)
+        assert moreau(d, x, tau)

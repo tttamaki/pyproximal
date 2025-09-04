@@ -250,7 +250,7 @@ def test_HalfSpace(par):
 def test_dykstras_projection(par: Dict[str, Any]) -> None:
     """DykstrasProjection and proximal/dual proximal of related indicator
     """
-    rng = np.random.default_rng(10)
+    rng = np.random.default_rng()
 
     w = rng.normal(0., 1., par['nx']).astype(par['dtype'])
     b = rng.normal(0., 1.)
