@@ -266,23 +266,47 @@ def test_dykstra_like_prox(par: Dict[str, Any]) -> None:
 
     rng = np.random.default_rng()
 
+    # check L1 + L1
+    tau = 2.0
+    x = rng.normal(0., 1., par['nx']).astype(par['dtype'])
+    rho = rng.uniform(0.0, 1.0)
+    sigma_1 = rng.uniform(0.1, 1.0)
+    sigma_2 = rng.uniform(0.1, 1.0)
+
+    l1_1 = L1(sigma=sigma_1)
+    l1_2 = L1(sigma=sigma_2)
+    l1_l1 = L1(sigma=sigma_1 + sigma_2)
+
+    d = DykstraLikeProximal([l1_1, l1_2])
+    assert moreau(d, x, tau)
+    assert np.allclose(l1_l1.prox(x, tau), d.prox(x, tau))
+
+    weights = rng.uniform(0.1, 1.0, 2)
+    weights /= weights.sum()
+    dp = DykstraLikeProximal([l1_1, l1_2], use_parallel=True, weights=weights)
+    assert moreau(dp, x, tau)
+    assert np.allclose(l1_l1.prox(x, tau), dp.prox(x, tau))
+
     # check L21 + L1
     tau = 2.0
-    x = rng.normal(0., 1., par['nx'] // 2 * 2).astype(par['dtype'])
+    x = rng.normal(0., 1., par['nx']).astype(par['dtype'])
     rho = rng.uniform(0.0, 1.0)
     sigma_21 = rng.uniform(0.1, 1.0)
 
     l21_l1 = L21_plus_L1(sigma=sigma_21, rho=rho)
 
     l1 = L1(sigma=sigma_21 * rho)
-    l21 = L21(sigma=sigma_21 * (1 - rho), ndim=par['nx'] // 2)
-    d = DykstraLikeProximal([l1, l21], max_iter=100)
+    l21 = L21(sigma=sigma_21 * (1 - rho), ndim=par['nx'])
+
+    d = DykstraLikeProximal([l1, l21])
     assert moreau(d, x, tau)
     assert np.allclose(l21_l1.prox(x, tau), d.prox(x, tau))
 
-    d = DykstraLikeProximal([l1, l21], max_iter=100, use_parallel=True)
-    assert moreau(d, x, tau)
-    assert np.allclose(l21_l1.prox(x, tau), d.prox(x, tau))
+    weights = rng.uniform(0.1, 1.0, 2)
+    weights /= weights.sum()
+    dp = DykstraLikeProximal([l1, l21], use_parallel=True, weights=weights)
+    assert moreau(dp, x, tau)
+    assert np.allclose(l21_l1.prox(x, tau), dp.prox(x, tau))
 
     # check f1+f2+f3+f4
     x = rng.normal(0., 1., par['nx']).astype(par['dtype'])
@@ -302,5 +326,5 @@ def test_dykstra_like_prox(par: Dict[str, Any]) -> None:
         [l1, l2, l1, l21],
         [l1, l2, l21, l21_l1],
     ]:
-        d = DykstraLikeProximal(prox_ops, max_iter=100)
+        d = DykstraLikeProximal(prox_ops)
         assert moreau(d, x, tau)
