@@ -1,3 +1,5 @@
+from typing import Dict, Any
+
 import numpy as np
 import pytest
 from numpy.testing import assert_array_almost_equal
@@ -245,8 +247,8 @@ def test_HalfSpace(par):
 
 
 @pytest.mark.parametrize("par", [(par1), (par2)])
-def test_DykstraProjComposite(par):
-    """DykstraProjComposite projection and proximal/dual proximal of related indicator
+def test_dykstras_projection(par: Dict[str, Any]) -> None:
+    """DykstrasProjection and proximal/dual proximal of related indicator
     """
     rng = np.random.default_rng(10)
 
@@ -263,16 +265,29 @@ def test_DykstraProjComposite(par):
 
     x = rng.normal(0., 1., par['nx']).astype(par['dtype'])
 
-    dykstra_proj_composite1 = DykstrasProjectionProx([eucl, box])
-    dykstra_proj_composite2 = DykstrasProjectionProx([eucl, half_space])
-    dykstra_proj_composite3 = DykstrasProjectionProx([half_space, box])
-    dykstra_proj_composite4 = DykstrasProjectionProx([eucl])
-    dykstra_proj_composite5 = DykstrasProjectionProx([eucl, box, half_space])
-
-    # prox / dualprox
     tau = 2.
+
+    dykstra_proj_composite1 = DykstrasProjectionProx([eucl])
+    dykstra_proj_composite2 = DykstrasProjectionProx([box])
+    dykstra_proj_composite3 = DykstrasProjectionProx([half_space])
+
+    dykstra_proj_composite4 = DykstrasProjectionProx([eucl, box])
+    dykstra_proj_composite5 = DykstrasProjectionProx([eucl, half_space])
+    dykstra_proj_composite6 = DykstrasProjectionProx([half_space, box])
+
+    dykstra_proj_composite4p = DykstrasProjectionProx([eucl, box], use_parallel=True)
+    dykstra_proj_composite5p = DykstrasProjectionProx([eucl, half_space], use_parallel=True)
+    dykstra_proj_composite6p = DykstrasProjectionProx([half_space, box], use_parallel=True)
+
+    dykstra_proj_composite7 = DykstrasProjectionProx([eucl, box, half_space])
+
     assert moreau(dykstra_proj_composite1, x, tau)
     assert moreau(dykstra_proj_composite2, x, tau)
     assert moreau(dykstra_proj_composite3, x, tau)
     assert moreau(dykstra_proj_composite4, x, tau)
     assert moreau(dykstra_proj_composite5, x, tau)
+    assert moreau(dykstra_proj_composite6, x, tau)
+    assert moreau(dykstra_proj_composite4p, x, tau)
+    assert moreau(dykstra_proj_composite5p, x, tau)
+    assert moreau(dykstra_proj_composite6p, x, tau)
+    assert moreau(dykstra_proj_composite7, x, tau)

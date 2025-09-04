@@ -12,16 +12,23 @@ class DykstrasProjectionProx(ProxOperator):
 
     Parameters
     ----------
-    projections : :obj:`List[Callable[[NDArray], NDArray]]`
-        Projection functions :math:`P_i`.
-    max_iter : :obj:`int`, optional
-        The maximum number of iterations. Default is 10.
+    projections : :obj:`List[Callable[[np.ndarray], np.ndarray]]`
+        A list of projection functions :math:`P_1, \ldots, P_m`.
+    max_iter : :obj:`int`, optional, default=10
+        The maximum number of iterations.
+    use_parallel : :obj:`bool`, optional, default=False
+        If True, use the parallel version when $m=2$.
 
     Notes
     -----
     As the intersection of convex sets is an indicator function,
-    the proximal operator corresponds to its orthogonal projection
-    (see :class:`pyproximal.projection.DykstraProjCompositeProj` for details).
+    the proximal operator corresponds to its convex projection
+    (see :class:`pyproximal.projection.DykstrasProjection` for details).
+
+    See also
+    --------
+    pyproximal.projection.DykstrasProjection :
+        The corresponding convex projection.
 
     """
 

@@ -9,12 +9,12 @@ class DykstrasProjection():
 
     Parameters
     ----------
-    projections : :obj:`List[Callable[[NDArray], NDArray]]`
+    projections : :obj:`List[Callable[[np.ndarray], np.ndarray]]`
         A list of projection functions :math:`P_1, \ldots, P_m`.
-    max_iter : :obj:`int`, optional
-        The maximum number of iterations. Default is 10.
-    use_parallel : :obj:`bool`, optional
-        If True, use the parallel version when $m=2$. Default is False.
+    max_iter : :obj:`int`, optional, default=10
+        The maximum number of iterations.
+    use_parallel : :obj:`bool`, optional, default=False
+        If True, use the parallel version when $m=2$.
 
     Notes
     -----
@@ -23,17 +23,15 @@ class DykstrasProjection():
     :math:`C_i`, this class computes the convex projection :math:`P_C(x)`
     of :math:`x` using Dykstra's algorithm, where
 
-    .. math::
-
-        C = \cap_{i=1}^m C_i
+    .. math:: C = \cap_{i=1}^m C_i
 
     is the intersection of :math:`C_i` provided :math:`C \neq \emptyset`.
 
-    For :math:`m=2`, the projection :math:`P_C(x)` is computed
+    For :math:`m=2`, the projection :math:`P_C(x)` of :math:`x` is computed
     by the Dykstra's algorithm [1]_, [2]_, [3]_:
 
     * :math:`x_0 = x, p_0 = q_0 = 0`,
-    * for :math:`k = 1, \ldots`
+    * for :math:`k = 1, 2, \ldots`
 
       * :math:`y_k = P_1(x_k + p_k)`
       * :math:`p_{k+1} = x_k + p_k - y_k`
@@ -41,22 +39,25 @@ class DykstrasProjection():
       * :math:`q_{k+1} = y_k + q_k - x_{k+1}`
 
     For :math:`m \ge 2`, the projection :math:`P_C(x)` is computed
-    by the parallel Dykstra's algorithm[4]_, [5]_, [6]_:
+    by the parallel Dykstra's algorithm [5]_, [6]_. The following
+    is taken from [4]_:
 
     * :math:`u_m^{(0)} = x, z_1^{(0)} = \cdots = z_m^{(0)} = 0`,
-    * for :math:`k = 1, \ldots`
+    * for :math:`k = 1, 2, \ldots`
 
       * for :math:`i = 1, \ldots, m`
 
         * :math:`u_0^{(k)} = u_m^{(k-1)}`
         * :math:`u_i^{(k)} = P_i(u_{i-1}^{(k)} + z_i^{(k-1)})`
-        * :math:`z_i^{(k)} = u_{i-1}^{(k)} + z_i^{(k-1)} - u_i^{(k)}`
+        * :math:`z_i^{(k)} = z_i^{(k-1)} + u_{i-1}^{(k)} - u_i^{(k)}`
 
     Note the this is the proximal operator of the corresponding
     indicator function
-    (see :class:`pyproximal.DykstraProjComposite` for details).
+    (see :class:`pyproximal.DykstrasProjectionProx` for details).
 
 
+    References
+    ----------
 
     .. [1] Bauschke, H.H., Borwein, J.M., 1994. Dykstra's Alternating
         Projection Algorithm for Two Sets. Journal of Approximation Theory 79,
@@ -81,6 +82,14 @@ class DykstrasProjection():
         https://doi.org/10.1080/02331930008844513
         https://people.orie.cornell.edu/aslewis/publications/00-dykstras.pdf
 
+
+    See also
+    --------
+    pyproximal.DykstrasProjectionProx :
+        The corresponding indicator function.
+    pyproximal.DykstraLikeProximal :
+        Proximal operator of a sum of two or more convex functions
+        using Dykstra-like algorithm.
     """
 
     def __init__(
@@ -96,11 +105,16 @@ class DykstrasProjection():
     def __call__(self, x: NDArray) -> NDArray:
         r"""compute projection :math:`P_C(x)` of :math:`x`.
 
-        Args:
-            x (NDArray): a point
+        Parameters
+        ----------
+        x : :obj:`numpy.ndarray`
+            A point
 
-        Returns:
-            NDArray: the projection of x
+        Returns
+        -------
+        :obj:`numpy.ndarray`
+            projection of x
+
         """
         if len(self.projections) == 1:
             return self.projections[0](x)
@@ -111,14 +125,18 @@ class DykstrasProjection():
         return self.parallel_dykstra_projection(x)
 
     def dykstra_projection(self, x0: NDArray) -> NDArray:
-        r"""compute projection :math:`P_C(x)` of :math:`x` onto :math:`C`.
-        Particulaly for :math:`m=2`.
+        r"""Compute projection :math:`P_C(x)` for :math:`m=2`.
 
-        Args:
-            x (NDArray): a point
+        Parameters
+        ----------
+        x : :obj:`numpy.ndarray`
+            A point
 
-        Returns:
-            NDArray: projection of x
+        Returns
+        -------
+        :obj:`numpy.ndarray`
+            projection of x
+
         """
         x = x0.copy()
         p = np.zeros_like(x)
@@ -137,14 +155,18 @@ class DykstrasProjection():
         return x
 
     def parallel_dykstra_projection(self, x0: NDArray) -> NDArray:
-        r"""compute projection :math:`P_C(x)` of :math:`x` onto :math:`C`.
-        Particulaly for :math:`m \ge 2`.
+        r"""Compute projection :math:`P_C(x)` for :math:`m \ge 2`.
 
-        Args:
-            x (NDArray): a point
+        Parameters
+        ----------
+        x : :obj:`numpy.ndarray`
+            A point
 
-        Returns:
-            NDArray: projection of x
+        Returns
+        -------
+        :obj:`numpy.ndarray`
+            projection of x
+
         """
         u = x0.copy()
         m = len(self.projections)
