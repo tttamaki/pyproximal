@@ -31,7 +31,7 @@ class DykstraLikeProximal(ProxOperator):
 
     .. math:: \prox_{\tau \ f + g}
 
-    using Dykstra-like algorithm, or the weighted sum of functions
+    using Dykstra-like algorithm, or of the weighted sum of functions
 
     .. math:: \prox_{\tau \ \sum_{i=1}^m w_i f_i}
 
@@ -45,9 +45,9 @@ class DykstraLikeProximal(ProxOperator):
     * for :math:`k = 1, \ldots`
 
       * :math:`\mathbf{y}^{(k)} = \prox_{\tau g}(\mathbf{x}^{(k)} + \mathbf{p}^{(k)})`
-      * :math:`\mathbf{p}^{(k+1)} = \mathbf{p}_k + (\mathbf{x}_k - \mathbf{y}^{(k)})`
+      * :math:`\mathbf{p}^{(k+1)} = \mathbf{p}^{(k)} + \mathbf{x}^{(k)} - \mathbf{y}^{(k)}`
       * :math:`\mathbf{x}^{(k+1)} = \prox_{\tau f}(\mathbf{y}^{(k)} + \mathbf{q}^{(k)})`
-      * :math:`\mathbf{q}^{(k+1)} = \mathbf{q}^{(k)} + (\mathbf{y}^{(k)} - \mathbf{x}^{(k+1)})`
+      * :math:`\mathbf{q}^{(k+1)} = \mathbf{q}^{(k)} + \mathbf{y}^{(k)} - \mathbf{x}^{(k+1)}`
 
 
 
@@ -63,7 +63,7 @@ class DykstraLikeProximal(ProxOperator):
       * :math:`\mathbf{x}^{(k+1)} = \sum_{i=1}^{m} w_i \prox_{\tau f_i} (\mathbf{z}_{i}^{(k)})`
       * for :math:`i = 1, \ldots, m`
 
-        * :math:`\mathbf{z}_{i}^{(k+1)} = \mathbf{z}_{i}^{(k)} + (\mathbf{x}^{(k+1)} - \prox_{\tau f_i} (\mathbf{z}_{i}^{(k)}) )`
+        * :math:`\mathbf{z}_{i}^{(k+1)} = \mathbf{z}_{i}^{(k)} + \mathbf{x}^{(k+1)} - \prox_{\tau f_i} (\mathbf{z}_{i}^{(k)})`
 
 
     References
@@ -107,6 +107,7 @@ class DykstraLikeProximal(ProxOperator):
         max_iter: int = 100,
         tol: float = 1e-7,
         use_parallel: bool = False,
+        use_original_eq: bool = False,
     ) -> None:
         super().__init__(None, False)
         assert len(ops) > 0
@@ -118,6 +119,7 @@ class DykstraLikeProximal(ProxOperator):
         else:
             self.w = weights
         self.tol = tol
+        self.use_original_eq = use_original_eq
 
     def __call__(self, x: NDArray) -> bool | float:
         """Proximable function
@@ -219,10 +221,12 @@ class DykstraLikeProximal(ProxOperator):
         for _ in range(self.max_iter):
             x_old = x.copy()
 
-            # The first one is the equation in the literature, but doesn't pass the test.
-            # The second one passes the test, but is not shown in the literature.
-            # prox_z = [self.ops[i].prox(z[i], tau) for i in range(m)]
-            prox_z = [self.ops[i].prox(z[i], tau / self.w[i]) for i in range(m)]
+            if self.use_original_eq:  # not default
+                # This is in the literature, but doesn't pass the tests.
+                prox_z = [self.ops[i].prox(z[i], tau) for i in range(m)]
+            else:  # default
+                # This one passes the tests, but is not shown in the literature.
+                prox_z = [self.ops[i].prox(z[i], tau / self.w[i]) for i in range(m)]
 
             x = np.zeros_like(x)
             for i in range(m):
