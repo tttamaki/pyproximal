@@ -13,13 +13,15 @@ class DykstraLikeProximal(ProxOperator):
     ----------
     ops : :obj:`List[ProxOperator]`
         A list of proximable functions :math:`f_1, \ldots, f_m`.
-    max_iter : :obj:`int`, optional, default=10
-        The maximum number of iterations.
-    use_parallel : :obj:`bool`, optional, default=False
-        If True, use the parallel version when $m=2$.
     weights : :obj:`List[float] | None`, optional, default=None
         A list of weights for the weighted sum. Defaults to None, which means
         :math:`w_1 = \cdots = w_m = \frac{1}{m}.`
+    max_iter : :obj:`int`, optional, default=100
+        The maximum number of iterations.
+    tol : :obj:`float`, optional, default=1e-7
+        Torrelance to stop the iteration.
+    use_parallel : :obj:`bool`, optional, default=False
+        If True, use the parallel version when $m=2$.
 
     Notes
     -----
@@ -101,9 +103,10 @@ class DykstraLikeProximal(ProxOperator):
     def __init__(
         self,
         ops: List[ProxOperator],
-        max_iter: int = 10,
+        weights: NDArray | List[float] | None = None,
+        max_iter: int = 100,
+        tol: float = 1e-7,
         use_parallel: bool = False,
-        weights: NDArray | List[float] | None = None
     ) -> None:
         super().__init__(None, False)
         assert len(ops) > 0
@@ -114,6 +117,7 @@ class DykstraLikeProximal(ProxOperator):
             self.w = [1. / len(self.ops)] * len(self.ops)
         else:
             self.w = weights
+        self.tol = tol
 
     def __call__(self, x: NDArray) -> bool | float:
         """Proximable function
@@ -130,6 +134,7 @@ class DykstraLikeProximal(ProxOperator):
             - return the sum of numeric ops values if all boolean ops are True
             - return True if ops are all boolean (no numeric ops) and True
         """
+        # inspired by https://github.com/PyLops/pyproximal/issues/116
         prox_sum = 0.
         has_numeric = False
         for prox_op in self.ops:
@@ -214,8 +219,10 @@ class DykstraLikeProximal(ProxOperator):
         for _ in range(self.max_iter):
             x_old = x.copy()
 
-            prox_z = [self.ops[i].prox(z[i], tau / self.w[i]) for i in range(m)]
+            # The first one is the equation in the literature, but doesn't pass the test.
+            # The second one passes the test, but is not shown in the literature.
             # prox_z = [self.ops[i].prox(z[i], tau) for i in range(m)]
+            prox_z = [self.ops[i].prox(z[i], tau / self.w[i]) for i in range(m)]
 
             x = np.zeros_like(x)
             for i in range(m):
@@ -224,7 +231,7 @@ class DykstraLikeProximal(ProxOperator):
             for i in range(m):
                 z[i] = z[i] + x - prox_z[i]
 
-            if np.allclose(x, x_old):
+            if np.abs(x - x_old).max() < self.tol:
                 break
 
         return x
