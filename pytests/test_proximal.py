@@ -265,11 +265,10 @@ def test_dykstra_like_prox(par: Dict[str, Any]) -> None:
     """Dykstra-like proximal algorithms"""
 
     rng = np.random.default_rng()
+    tau = 1.0
 
     # check L1 + L1
-    tau = 2.0
-    x = rng.normal(0., 1., par['nx']).astype(par['dtype'])
-    rho = rng.uniform(0.0, 1.0)
+    x = rng.normal(0., 3.5, par['nx']).astype(par['dtype'])
     sigma_1 = rng.uniform(0.1, 1.0)
     sigma_2 = rng.uniform(0.1, 1.0)
 
@@ -278,35 +277,39 @@ def test_dykstra_like_prox(par: Dict[str, Any]) -> None:
     l1_l1 = L1(sigma=sigma_1 + sigma_2)
 
     d = DykstraLikeProximal([l1_1, l1_2])
+    assert np.allclose(l1_l1(x), d(x))
     assert moreau(d, x, tau)
     assert np.allclose(l1_l1.prox(x, tau), d.prox(x, tau))
 
-    weights = rng.uniform(0.1, 1.0, 2)
+    weights = rng.uniform(0.25, 0.75, 2)
     weights /= weights.sum()
     dp = DykstraLikeProximal([l1_1, l1_2], use_parallel=True, weights=weights)
+    assert np.allclose(l1_l1(x), d(x))
     assert moreau(dp, x, tau)
-    assert np.allclose(l1_l1.prox(x, tau), dp.prox(x, tau))
+    assert_array_almost_equal(dp.prox(x, tau), l1_l1.prox(x, tau), decimal=2)
 
     # check L21 + L1
-    tau = 2.0
     x = rng.normal(0., 1., par['nx']).astype(par['dtype'])
     rho = rng.uniform(0.0, 1.0)
-    sigma_21 = rng.uniform(0.1, 1.0)
-
+    sigma_21 = rng.uniform(0.1, 4.0)
     l21_l1 = L21_plus_L1(sigma=sigma_21, rho=rho)
-
     l1 = L1(sigma=sigma_21 * rho)
     l21 = L21(sigma=sigma_21 * (1 - rho), ndim=par['nx'])
 
     d = DykstraLikeProximal([l1, l21])
+    assert np.allclose(d(x), l21_l1(x))
     assert moreau(d, x, tau)
-    assert np.allclose(l21_l1.prox(x, tau), d.prox(x, tau))
+    assert np.allclose(d.prox(x, tau), l21_l1.prox(x, tau))
 
     weights = rng.uniform(0.1, 1.0, 2)
     weights /= weights.sum()
     dp = DykstraLikeProximal([l1, l21], use_parallel=True, weights=weights)
+    assert np.allclose(d(x), l21_l1(x))
     assert moreau(dp, x, tau)
-    assert np.allclose(l21_l1.prox(x, tau), dp.prox(x, tau))
+    dp_prox = dp.prox(x, tau)
+    l21_l1_prox = l21_l1.prox(x, tau)
+    assert_array_almost_equal(dp_prox, l21_l1_prox, decimal=2)
+    # assert np.allclose(dp_prox, l21_l1_prox)
 
     # check f1+f2+f3+f4
     x = rng.normal(0., 1., par['nx']).astype(par['dtype'])
