@@ -261,13 +261,12 @@ def test_QuadraticEnvelopeRankL2(par, expected):
 
 
 @pytest.mark.parametrize("par", [(par1), (par2)])
-def test_dykstra_like_prox(par: Dict[str, Any]) -> None:
-    """Dykstra-like proximal algorithms"""
+def test_dykstra_like_prox_l1_l1(par: Dict[str, Any]) -> None:
+    """Check Dykstra-like proximal algorithms for L1 + L1"""
 
-    rng = np.random.default_rng()
+    rng = np.random.default_rng(10)
     tau = 1.0
 
-    # check L1 + L1
     x = rng.normal(0., 3.5, par['nx']).astype(par['dtype'])
     sigma_1 = rng.uniform(0.1, 1.0)
     sigma_2 = rng.uniform(0.1, 1.0)
@@ -281,47 +280,100 @@ def test_dykstra_like_prox(par: Dict[str, Any]) -> None:
     assert moreau(d, x, tau)
     assert np.allclose(l1_l1.prox(x, tau), d.prox(x, tau))
 
+    d = DykstraLikeProximal([l1_2, l1_1])
+    assert np.allclose(l1_l1(x), d(x))
+    assert moreau(d, x, tau)
+    assert np.allclose(l1_l1.prox(x, tau), d.prox(x, tau))
+
     weights = rng.uniform(0.25, 0.75, 2)
     weights /= weights.sum()
     dp = DykstraLikeProximal([l1_1, l1_2], use_parallel=True, weights=weights)
     assert np.allclose(l1_l1(x), d(x))
     assert moreau(dp, x, tau)
-    assert_array_almost_equal(dp.prox(x, tau), l1_l1.prox(x, tau), decimal=2)
+    assert np.allclose(l1_l1.prox(x, tau), dp.prox(x, tau), atol=1e-6)
 
-    # check L21 + L1
-    x = rng.normal(0., 1., par['nx']).astype(par['dtype'])
+
+@pytest.mark.parametrize("par", [(par1), (par2)])
+def test_dykstra_like_prox_l2_l2(par: Dict[str, Any]) -> None:
+    """Check Dykstra-like proximal algorithms for L2 + L2"""
+
+    rng = np.random.default_rng(10)
+    tau = 1.0
+
+    x = rng.normal(0., 3.5, par['nx']).astype(par['dtype'])
+    sigma_1 = rng.uniform(0.1, 1.0)
+    sigma_2 = rng.uniform(0.1, 1.0)
+
+    l2_1 = L2(sigma=sigma_1)
+    l2_2 = L2(sigma=sigma_2)
+    l2_l2 = L2(sigma=sigma_1 + sigma_2)
+
+    d = DykstraLikeProximal([l2_1, l2_2])
+    assert np.allclose(l2_l2(x), d(x))
+    assert moreau(d, x, tau)
+    assert np.allclose(l2_l2.prox(x, tau), d.prox(x, tau))
+
+    d = DykstraLikeProximal([l2_2, l2_1])
+    assert np.allclose(l2_l2(x), d(x))
+    assert moreau(d, x, tau)
+    assert np.allclose(l2_l2.prox(x, tau), d.prox(x, tau))
+
+    weights = rng.uniform(0.25, 0.75, 2)
+    weights /= weights.sum()
+    dp = DykstraLikeProximal([l2_1, l2_2], use_parallel=True, weights=weights)
+    assert np.allclose(l2_l2(x), d(x))
+    assert moreau(dp, x, tau)
+    assert np.allclose(l2_l2.prox(x, tau), dp.prox(x, tau), atol=1e-6)
+
+
+@pytest.mark.parametrize("par", [(par1), (par2)])
+def test_dykstra_like_prox_l21_l1(par: Dict[str, Any]) -> None:
+    """Check Dykstra-like proximal algorithms for L21 + L1"""
+
+    rng = np.random.default_rng(10)
+    tau = 1.0
+
+    x = rng.normal(0., 3.5, par['nx']).astype(par['dtype'])
     rho = rng.uniform(0.0, 1.0)
-    sigma_21 = rng.uniform(0.1, 4.0)
-    l21_l1 = L21_plus_L1(sigma=sigma_21, rho=rho)
-    l1 = L1(sigma=sigma_21 * rho)
-    l21 = L21(sigma=sigma_21 * (1 - rho), ndim=par['nx'])
+    sigma = rng.uniform(0.1, 4.0)
+    l21_l1 = L21_plus_L1(sigma=sigma, rho=rho)
+    l1 = L1(sigma=sigma * rho)
+    l21 = L21(sigma=sigma * (1 - rho), ndim=par['nx'])
 
     d = DykstraLikeProximal([l1, l21])
     assert np.allclose(d(x), l21_l1(x))
     assert moreau(d, x, tau)
     assert np.allclose(d.prox(x, tau), l21_l1.prox(x, tau))
 
+    d = DykstraLikeProximal([l21, l1])
+    assert np.allclose(d(x), l21_l1(x))
+    assert moreau(d, x, tau)
+    assert np.allclose(d.prox(x, tau), l21_l1.prox(x, tau))
+
     weights = rng.uniform(0.1, 1.0, 2)
     weights /= weights.sum()
-    dp = DykstraLikeProximal([l1, l21], use_parallel=True, weights=weights)
+    dp = DykstraLikeProximal([l21, l1], use_parallel=True, weights=weights)
     assert np.allclose(d(x), l21_l1(x))
     assert moreau(dp, x, tau)
-    dp_prox = dp.prox(x, tau)
-    l21_l1_prox = l21_l1.prox(x, tau)
-    assert_array_almost_equal(dp_prox, l21_l1_prox, decimal=2)
-    # assert np.allclose(dp_prox, l21_l1_prox)
+    assert np.allclose(dp.prox(x, tau), l21_l1.prox(x, tau), atol=1e-6)
 
-    # check f1+f2+f3+f4
-    x = rng.normal(0., 1., par['nx']).astype(par['dtype'])
-    g = rng.normal(0., 1., par['nx']).astype(par['dtype'])
-    b = rng.normal(0., 1., par['nx']).astype(par['dtype'])
-    q = rng.normal(0., 1., par['nx']).astype(par['dtype'])
-    sigma_l1 = rng.uniform(0.1, 1.0)
-    sigma_l2 = rng.uniform(0.1, 1.0)
-    alpha_l2 = rng.uniform(0.1, 1.0)
 
-    l1 = L1(sigma=sigma_l1, g=g)
-    l2 = L2(sigma=sigma_l2, b=b, q=q, alpha=alpha_l2)
+@pytest.mark.parametrize("par", [(par1), (par2)])
+def test_dykstra_like_prox_f1f2f3f4(par: Dict[str, Any]) -> None:
+    """Check Dykstra-like proximal algorithms for f1+f2+f3+f4"""
+
+    rng = np.random.default_rng(10)
+    tau = 1.0
+
+    x = rng.normal(0., 2.5, par['nx']).astype(par['dtype'])
+    g = rng.normal(0., 2.5, par['nx']).astype(par['dtype'])
+    b = rng.normal(0., 2.5, par['nx']).astype(par['dtype'])
+    q = rng.normal(0., 2.5, par['nx']).astype(par['dtype'])
+
+    l1 = L1(sigma=rng.uniform(0.1, 1.0), g=g)
+    l2 = L2(sigma=rng.uniform(0.1, 1.0), b=b, q=q, alpha=rng.uniform(0.1, 1.0))
+    l21_l1 = L21_plus_L1(sigma=rng.uniform(0.1, 1.0), rho=rng.uniform(0.1, 1.0))
+    l21 = L21(sigma=rng.uniform(0.1, 1.0), ndim=par['nx'])
 
     for prox_ops in [
         [l1, l2],
