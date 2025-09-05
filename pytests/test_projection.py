@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, Callable
 
 import numpy as np
 import pytest
@@ -250,7 +250,7 @@ def test_HalfSpace(par):
 def test_dykstras_projection(par: Dict[str, Any]) -> None:
     """DykstrasProjection and proximal/dual proximal of related indicator
     """
-    rng = np.random.default_rng()
+    rng = np.random.default_rng(10)
 
     w = rng.normal(0., 1., par['nx']).astype(par['dtype'])
     b = rng.normal(0., 1.)
@@ -263,31 +263,37 @@ def test_dykstras_projection(par: Dict[str, Any]) -> None:
         rng.uniform(0.1, 1.0, par['nx'])
     )
 
-    x = rng.normal(0., 1., par['nx']).astype(par['dtype'])
+    x = rng.normal(0., 2., par['nx']).astype(par['dtype'])
 
     tau = 2.
 
-    dykstra_proj_composite1 = DykstrasProjectionProx([eucl])
-    dykstra_proj_composite2 = DykstrasProjectionProx([box])
-    dykstra_proj_composite3 = DykstrasProjectionProx([half_space])
+    projections : list[list[Callable[[Any], Any]]] = [
+        # single projection
+        [eucl],
+        [box],
+        [half_space],
+        # two projections
+        [eucl, box],
+        [box, eucl],
+        [half_space, eucl],
+        [eucl, half_space],
+        [box, half_space],
+        [half_space, box],
+        [eucl, eucl],
+        [box, box],
+        [half_space, half_space],
+        # three projections
+        [half_space, eucl, box],
+        [half_space, box, eucl],
+        [eucl, half_space, box],
+        [box, half_space, eucl],
+        [eucl, box, half_space],
+        [box, eucl, half_space],
+    ]
+    for proj in projections:
+        d = DykstrasProjectionProx(proj)
+        assert moreau(d, x, tau)
 
-    dykstra_proj_composite4 = DykstrasProjectionProx([eucl, box])
-    dykstra_proj_composite5 = DykstrasProjectionProx([eucl, half_space])
-    dykstra_proj_composite6 = DykstrasProjectionProx([half_space, box])
-
-    dykstra_proj_composite4p = DykstrasProjectionProx([eucl, box], use_parallel=True)
-    dykstra_proj_composite5p = DykstrasProjectionProx([eucl, half_space], use_parallel=True)
-    dykstra_proj_composite6p = DykstrasProjectionProx([half_space, box], use_parallel=True)
-
-    dykstra_proj_composite7 = DykstrasProjectionProx([eucl, box, half_space])
-
-    assert moreau(dykstra_proj_composite1, x, tau)
-    assert moreau(dykstra_proj_composite2, x, tau)
-    assert moreau(dykstra_proj_composite3, x, tau)
-    assert moreau(dykstra_proj_composite4, x, tau)
-    assert moreau(dykstra_proj_composite5, x, tau)
-    assert moreau(dykstra_proj_composite6, x, tau)
-    assert moreau(dykstra_proj_composite4p, x, tau)
-    assert moreau(dykstra_proj_composite5p, x, tau)
-    assert moreau(dykstra_proj_composite6p, x, tau)
-    assert moreau(dykstra_proj_composite7, x, tau)
+        if len(proj) == 2:
+            d = DykstrasProjectionProx(proj, use_parallel=True)
+            assert moreau(d, x, tau)
