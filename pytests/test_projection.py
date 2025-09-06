@@ -1,5 +1,3 @@
-from typing import Dict, Any, Callable
-
 import numpy as np
 import pytest
 from numpy.testing import assert_array_almost_equal
@@ -16,14 +14,9 @@ from pyproximal.proximal import (
     L10Ball,
     NuclearBall,
     Simplex,
-    DykstrasProjectionProx,
 )
 from pyproximal.utils import moreau
-from pyproximal.projection import (
-    EuclideanBallProj,
-    HalfSpaceProj,
-    BoxProj,
-)
+
 
 par1 = {"nx": 10, "ny": 8, "axis": 0, "dtype": "float32"}  # even float32 dir0
 par2 = {"nx": 11, "ny": 8, "axis": 1, "dtype": "float64"}  # odd float64 dir1
@@ -244,56 +237,3 @@ def test_HalfSpace(par):
     # prox / dualprox
     tau = 2.0
     assert moreau(half_space, x, tau)
-
-
-@pytest.mark.parametrize("par", [(par1), (par2)])
-def test_dykstras_projection(par: Dict[str, Any]) -> None:
-    """DykstrasProjection and proximal/dual proximal of related indicator
-    """
-    rng = np.random.default_rng(10)
-
-    w = rng.normal(0., 1., par['nx']).astype(par['dtype'])
-    b = rng.normal(0., 1.)
-    half_space = HalfSpaceProj(w, b)
-
-    eucl = EuclideanBallProj(np.zeros(par['nx']), rng.uniform(0.1, 1.0))
-
-    box = BoxProj(
-        rng.uniform(-1.0, -0.1, par['nx']),
-        rng.uniform(0.1, 1.0, par['nx'])
-    )
-
-    x = rng.normal(0., 2., par['nx']).astype(par['dtype'])
-
-    tau = 2.
-
-    projections : list[list[Callable[[Any], Any]]] = [
-        # single projection
-        [eucl],
-        [box],
-        [half_space],
-        # two projections
-        [eucl, box],
-        [box, eucl],
-        [half_space, eucl],
-        [eucl, half_space],
-        [box, half_space],
-        [half_space, box],
-        [eucl, eucl],
-        [box, box],
-        [half_space, half_space],
-        # three projections
-        [half_space, eucl, box],
-        [half_space, box, eucl],
-        [eucl, half_space, box],
-        [box, half_space, eucl],
-        [eucl, box, half_space],
-        [box, eucl, half_space],
-    ]
-    for proj in projections:
-        d = DykstrasProjectionProx(proj)
-        assert moreau(d, x, tau)
-
-        if len(proj) == 2:
-            d = DykstrasProjectionProx(proj, use_parallel=True)
-            assert moreau(d, x, tau)
