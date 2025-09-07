@@ -2,8 +2,6 @@ from typing import Dict, Any, Callable
 
 import numpy as np
 import pytest
-# from numpy.testing import assert_array_almost_equal
-# from pylops.basicoperators import Identity
 
 from pyproximal.proximal import (
     Box,
@@ -21,7 +19,6 @@ from pyproximal.proximal import (
     L2,
     L21,
     L21_plus_L1,
-
     DykstraLikeProximal,
 )
 
