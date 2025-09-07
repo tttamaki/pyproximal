@@ -1,4 +1,5 @@
-from typing import List, Callable
+from typing import List, Callable, Any
+
 import numpy as np
 from pylops.utils.typing import NDArray
 
@@ -52,5 +53,5 @@ class DykstrasProjectionProx(ProxOperator):
         return all(np.allclose(x, proj(x)) for proj in self.projections)
 
     @_check_tau
-    def prox(self, x: NDArray, tau: float) -> NDArray:
+    def prox(self, x: NDArray, tau: float, **kwargs: Any) -> NDArray:
         return self.dykstras_projection(x)

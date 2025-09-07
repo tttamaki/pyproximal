@@ -1,4 +1,5 @@
-from typing import List
+from typing import List, Any
+
 import numpy as np
 from pylops.utils.typing import NDArray
 
@@ -150,7 +151,7 @@ class DykstraLikeProximal(ProxOperator):
         return prox_sum if has_numeric else True
 
     @_check_tau
-    def prox(self, x: NDArray, tau: float) -> NDArray:
+    def prox(self, x: NDArray, tau: float, **kwargs: Any) -> NDArray:
         if len(self.ops) == 1:
             return self.ops[0].prox(x, tau)
 
