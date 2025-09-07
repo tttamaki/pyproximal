@@ -6,16 +6,6 @@ import pytest
 # from pylops.basicoperators import Identity
 
 from pyproximal.proximal import (
-    # AffineSet,
-    # Box,
-    # EuclideanBall,
-    # HalfSpace,
-    # Hankel,
-    # L0Ball,
-    # L1Ball,
-    # L10Ball,
-    # NuclearBall,
-    # Simplex,
     Box,
     DykstrasProjectionProx,
 )
@@ -24,19 +14,14 @@ from pyproximal.projection import (
     EuclideanBallProj,
     HalfSpaceProj,
     BoxProj,
+    DykstrasProjection,
 )
 from pyproximal.proximal import (
     L1,
     L2,
     L21,
     L21_plus_L1,
-    # Nonlinear,
-    # Orthogonal,
-    # Quadratic,
-    # QuadraticEnvelopeCardIndicator,
-    # QuadraticEnvelopeRankL2,
-    # SingularValuePenalty,
-    # VStack,
+
     DykstraLikeProximal,
 )
 
@@ -229,28 +214,49 @@ def test_dykstra_like_prox_f1f2f3f4(par: Dict[str, Any]) -> None:
 
 @pytest.mark.parametrize("par", [(par1prox), (par2prox)])
 def test_dykstra_like_prox_numeric_projection(par: Dict[str, Any]) -> None:
-    """Check Dykstra-like proximal algorithms for f1+f2+f3+f4"""
+    """Check Dykstra-like proximal algorithms for numeric prox + indicator function"""
 
     rng = np.random.default_rng()
     tau = 1.0
 
     g = rng.normal(0., 2.5, par['nx']).astype(par['dtype'])
-    l1 = L1(sigma=rng.uniform(0.1, 1.0), g=g)
+    l1 = L1(sigma=rng.uniform(0.1, 1.0), g=g)  # numeric prox
 
-    box = Box(
+    box1 = Box(
         rng.uniform(-1.0, -0.1, par['nx']),
         rng.uniform(0.1, 1.0, par['nx'])
-    )
+    )  # boolean prox
+    box2 = Box(
+        rng.uniform(-1.0, -0.1, par['nx']),
+        rng.uniform(0.1, 1.0, par['nx'])
+    )  # boolean prox
 
+    # check: Moreau identity
     x = rng.normal(0., 2.5, par['nx']).astype(par['dtype'])
-    d = DykstraLikeProximal([l1, box])
+    d = DykstraLikeProximal([l1, box1])
     assert moreau(d, x, tau)
 
-    x_proj = box.prox(x, tau)
-    # assert box(x_proj)
-    dx = d(x_proj)
-    assert isinstance(dx, float)
+    # check: return numeric
+    x_proj = box1.prox(x, tau)
+    assert box1(x_proj)
+    x_prox = d(x_proj)  # return numeric because x_proj is in the box
+    assert isinstance(x_prox, float)
 
+    # check: return False
+    x_proj = box1.prox(x, tau)
+    assert box1(x_proj)  # x_proj is in the box
     x_proj += rng.uniform(0.1, 1.0, par['nx'])
-    dx = d(x_proj)
-    assert isinstance(dx, bool) and not dx
+    assert not box1(x_proj)  # now x_proj is out of the box
+    x_prox = d(x_proj)  # return False
+    assert isinstance(x_prox, bool) and not x_prox
+
+    # check: return True
+    d_proj = DykstrasProjection([
+        lambda x: box1.prox(x, tau),
+        lambda x: box2.prox(x, tau),
+    ])
+    x_proj = d_proj(x)  # x_proj is in the intersection
+    d = DykstraLikeProximal([box1, box2])
+    x_prox = d(x_proj)  # return True
+    assert isinstance(x_prox, bool) and x_prox
+    assert moreau(d, x, tau)
