@@ -5,10 +5,10 @@ import pytest
 
 from pyproximal.utils import moreau
 from pyproximal.projection import (
-    EuclideanBallProj,
-    HalfSpaceProj,
     BoxProj,
     DykstrasProjection,
+    EuclideanBallProj,
+    HalfSpaceProj,
 )
 from pyproximal.proximal import (
     Box,
@@ -22,8 +22,6 @@ from pyproximal.proximal import (
 
 par1proj = {"nx": 10, "ny": 8, "axis": 0, "dtype": "float32"}  # even float32 dir0
 par2proj = {"nx": 11, "ny": 8, "axis": 1, "dtype": "float64"}  # odd float64 dir1
-par3proj = {"nx": 10, "ny": 8, "axis": 0, "dtype": "float32"}  # even float32 dir0
-par4proj = {"nx": 11, "ny": 8, "axis": 1, "dtype": "float64"}  # odd float64  dir1
 
 par1prox = {"nx": 10, "ny": 10, "sigma": 1.0, "dtype": "float32"}  # even float32
 par2prox = {"nx": 11, "ny": 14, "sigma": 2.0, "dtype": "float64"}  # odd float64
@@ -116,20 +114,20 @@ def test_dykstra_like_prox_l1_l1(par: Dict[str, Any]) -> None:
 
     d = DykstraLikeProximal([l1_1, l1_2])
     assert np.allclose(l1_l1(x), d(x))
-    assert moreau(d, x, tau)
     assert np.allclose(l1_l1.prox(x, tau), d.prox(x, tau))
+    assert moreau(d, x, tau)
 
     d = DykstraLikeProximal([l1_2, l1_1])
     assert np.allclose(l1_l1(x), d(x))
-    assert moreau(d, x, tau)
     assert np.allclose(l1_l1.prox(x, tau), d.prox(x, tau))
+    assert moreau(d, x, tau)
 
     weights = rng.uniform(0.25, 0.75, 2)
     weights /= weights.sum()
     dp = DykstraLikeProximal([l1_1, l1_2], use_parallel=True, weights=weights)
     assert np.allclose(l1_l1(x), d(x))
-    assert moreau(dp, x, tau)
     assert np.allclose(l1_l1.prox(x, tau), dp.prox(x, tau), atol=1e-6)
+    assert moreau(dp, x, tau)
 
 
 @pytest.mark.parametrize("par", [(par1prox), (par2prox)])
@@ -149,20 +147,20 @@ def test_dykstra_like_prox_l2_l2(par: Dict[str, Any]) -> None:
 
     d = DykstraLikeProximal([l2_1, l2_2])
     assert np.allclose(l2_l2(x), d(x))
-    assert moreau(d, x, tau)
     assert np.allclose(l2_l2.prox(x, tau), d.prox(x, tau))
+    assert moreau(d, x, tau)
 
     d = DykstraLikeProximal([l2_2, l2_1])
     assert np.allclose(l2_l2(x), d(x))
-    assert moreau(d, x, tau)
     assert np.allclose(l2_l2.prox(x, tau), d.prox(x, tau))
+    assert moreau(d, x, tau)
 
     weights = rng.uniform(0.25, 0.75, 2)
     weights /= weights.sum()
     dp = DykstraLikeProximal([l2_1, l2_2], use_parallel=True, weights=weights)
     assert np.allclose(l2_l2(x), d(x))
-    assert moreau(dp, x, tau)
     assert np.allclose(l2_l2.prox(x, tau), dp.prox(x, tau), atol=1e-6)
+    assert moreau(dp, x, tau)
 
 
 @pytest.mark.parametrize("par", [(par1prox), (par2prox)])
@@ -181,20 +179,20 @@ def test_dykstra_like_prox_l21_l1(par: Dict[str, Any]) -> None:
 
     d = DykstraLikeProximal([l1, l21])
     assert np.allclose(d(x), l21_l1(x))
-    assert moreau(d, x, tau)
     assert np.allclose(d.prox(x, tau), l21_l1.prox(x, tau))
+    assert moreau(d, x, tau)
 
     d = DykstraLikeProximal([l21, l1])
     assert np.allclose(d(x), l21_l1(x))
-    assert moreau(d, x, tau)
     assert np.allclose(d.prox(x, tau), l21_l1.prox(x, tau))
+    assert moreau(d, x, tau)
 
     weights = rng.uniform(0.1, 1.0, 2)
     weights /= weights.sum()
     dp = DykstraLikeProximal([l21, l1], use_parallel=True, weights=weights)
     assert np.allclose(d(x), l21_l1(x))
-    assert moreau(dp, x, tau)
     assert np.allclose(dp.prox(x, tau), l21_l1.prox(x, tau), atol=1e-6)
+    assert moreau(dp, x, tau)
 
 
 @pytest.mark.parametrize("par", [(par1prox), (par2prox)])
