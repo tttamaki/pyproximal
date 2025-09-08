@@ -74,7 +74,7 @@ class DykstraLikeProximal(ProxOperator):
     >>> import numpy as np
     >>> from pyproximal.proximal import L1, L2, DykstraLikeProximal
     >>> from pylops import MatrixMult
-    >>> rng = np.random.default_rng()
+    >>> rng = np.random.default_rng(10)
 
     >>> A = MatrixMult(rng.normal(0., 1., size=(3, 5)))
     >>> b = rng.normal(0., 1., size=3)
@@ -89,9 +89,9 @@ class DykstraLikeProximal(ProxOperator):
     >>> tau = 1.0
     >>> prox_x = dykstra.prox(x, tau)
     >>> print("x      =", x)
+    x      = [ 2.12912834 -4.92677803 -5.56477065 -3.80313016  3.24012294]
     >>> print("prox(x)=", prox_x)
-    x      = [-5.23899402  0.87338035  2.4931376  -3.65777431 -4.6659751 ]
-    prox(x)= [ 1.73959272  0.94078765  1.37338828 -2.95585083 -4.45746826]
+    prox(x)= [ 2.77581009 -1.37687093 -2.04246701 -1.81482749  1.54201139]
 
 
     References

@@ -69,16 +69,25 @@ class DykstrasProjection():
     ...         BoxProj,
     ...         EuclideanBallProj,
     ...         DykstrasProjection
-    ...     )
+    ... )
+
     >>> circle_1 = EuclideanBallProj(np.array([-2.5, 0.0]), 5)
     >>> circle_2 = EuclideanBallProj(np.array([2.5, 0.0]), 5)
     >>> circle_3 = EuclideanBallProj(np.array([0.0, 3.5]), 5)
     >>> box = BoxProj(np.array([-5.0, -2.5]), np.array([5.0, 2.5]))
+
+    >>> projections = [circle_1, circle_2, circle_3, box]
     >>> dykstra_proj = DykstrasProjection(projections)
-    >>> rng = np.random.default_rng()
+
+    >>> rng = np.random.default_rng(10)
     >>> x = rng.normal(0., 3.5, size=2)
-    >>> dykstra_proj(x)
-    array([-1.85983147, -1.14123118])
+
+    >>> print("x            =", x)
+    x            = [-3.86168457 -2.53758624]
+
+    >>> xp = dykstra_proj(x)
+    >>> print("x projection =", xp)
+    x projection = [-2.42308423 -0.87363268]
 
 
     References

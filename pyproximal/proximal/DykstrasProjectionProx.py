@@ -28,6 +28,39 @@ class DykstrasProjectionProx(ProxOperator):
     the proximal operator corresponds to its convex projection
     (see :class:`pyproximal.projection.DykstrasProjection` for details).
 
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from pyproximal.projection import (
+    ...         BoxProj,
+    ...         EuclideanBallProj,
+    ... )
+    >>> from pyproximal.proximal import DykstrasProjectionProx
+
+    >>> circle_1 = EuclideanBallProj(np.array([-2.5, 0.0]), 5)
+    >>> circle_2 = EuclideanBallProj(np.array([2.5, 0.0]), 5)
+    >>> circle_3 = EuclideanBallProj(np.array([0.0, 3.5]), 5)
+    >>> box = BoxProj(np.array([-5.0, -2.5]), np.array([5.0, 2.5]))
+
+    >>> projections = [circle_1, circle_2, circle_3, box]
+    >>> dykstra_prox = DykstrasProjectionProx(projections)
+
+    >>> rng = np.random.default_rng(10)
+    >>> x = rng.normal(0., 3.5, size=2)
+
+    >>> print("x            =", x)
+    x            = [-3.86168457 -2.53758624]
+    >>> dykstra_prox(x)  # x is outside
+    False
+
+    >>> xp = dykstra_prox.prox(x, 1.0)  # DykstrasProjection
+    >>> print("x projection =", xp)
+    x projection = [-2.42308423 -0.87363268]
+    >>> dykstra_prox(xp)  # x is inside
+    True
+
+
     See also
     --------
     pyproximal.projection.DykstrasProjection :
