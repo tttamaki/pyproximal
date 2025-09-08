@@ -17,7 +17,6 @@ from pyproximal.proximal import (
 )
 from pyproximal.utils import moreau
 
-
 par1 = {"nx": 10, "ny": 8, "axis": 0, "dtype": "float32"}  # even float32 dir0
 par2 = {"nx": 11, "ny": 8, "axis": 1, "dtype": "float64"}  # odd float64 dir1
 par3 = {"nx": 10, "ny": 8, "axis": 0, "dtype": "float32"}  # even float32 dir0

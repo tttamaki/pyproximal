@@ -7,8 +7,6 @@ import pyproximal
 from pyproximal.proximal import (
     L1,
     L2,
-    L21,
-    L21_plus_L1,
     Nonlinear,
     Orthogonal,
     Quadratic,
