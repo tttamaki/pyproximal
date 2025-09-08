@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from pylops.linearoperator import LinearOperator
 
 
-def DouglasRachfordSplitting(
+def PPXA(
     prox_ops: List[ProxOperator],
     x0: NDArray | List[NDArray],
     tau: float,
