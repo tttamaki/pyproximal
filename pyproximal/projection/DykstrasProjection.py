@@ -12,8 +12,10 @@ class DykstrasProjection():
     ----------
     projections : :obj:`List[Callable[[np.ndarray], np.ndarray]]`
         A list of projection functions :math:`P_1, \ldots, P_m`.
-    max_iter : :obj:`int`, optional, default=10
+    max_iter : :obj:`int`, optional, default=100
         The maximum number of iterations.
+    tol : :obj:`float`, optional, default=1e-6
+        Torrelance to stop the iteration.
     use_parallel : :obj:`bool`, optional, default=False
         If True, use the parallel version when $m=2$.
 
@@ -115,13 +117,15 @@ class DykstrasProjection():
     """
 
     def __init__(
-            self,
-            projections: List[Callable[[NDArray], NDArray]],
-            max_iter: int = 10,
-            use_parallel: bool = False,
+        self,
+        projections: List[Callable[[NDArray], NDArray]],
+        max_iter: int = 100,
+        tol: float = 1e-6,
+        use_parallel: bool = False,
     ) -> None:
         self.projections = projections
         self.max_iter = max_iter
+        self.tol = tol
         self.use_parallel = use_parallel
 
         if len(projections) == 1:
@@ -189,7 +193,8 @@ class DykstrasProjection():
             x = self.projections[1](y + q)
             q = y + q - x
 
-            if np.allclose(x, x_old):
+            if max(np.abs(x - x_old).max(),
+                    np.abs(y - x_old).max()) < self.tol:
                 break
         return x
 
@@ -213,14 +218,16 @@ class DykstrasProjection():
 
         for _ in range(self.max_iter):
             u_old = u.copy()
-            u_prev = u.copy()
+            # u_prev = u.copy()
+            u_prev = np.array([u.copy() for _ in range(m)])
 
             for i in range(m):
-                u = self.projections[i](u_prev + z[i])
-                z[i] = z[i] + u_prev - u
-                u_prev = u
+                u = self.projections[i](u_prev[i - 1] + z[i])
+                z[i] = z[i] + u_prev[i - 1] - u
+                u_prev[i] = u
 
-            if np.allclose(u, u_old):
+            if max(np.abs(u_old - u).max(),
+                   np.abs(u_prev - u).max()) < self.tol:
                 break
 
         return u

@@ -233,7 +233,7 @@ class DykstraLikeProximal(ProxOperator):
             x = self.ops[1].prox(y + q, tau)
             q = q + y - x
 
-            if np.allclose(x, x_old):
+            if np.abs(x - x_old).max() < self.tol:
                 break
 
         return x

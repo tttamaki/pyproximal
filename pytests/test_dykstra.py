@@ -3,10 +3,6 @@ from typing import Dict, Any, Callable
 import numpy as np
 import pytest
 
-from pyproximal.proximal import (
-    Box,
-    DykstrasProjectionProx,
-)
 from pyproximal.utils import moreau
 from pyproximal.projection import (
     EuclideanBallProj,
@@ -15,11 +11,13 @@ from pyproximal.projection import (
     DykstrasProjection,
 )
 from pyproximal.proximal import (
+    Box,
+    DykstraLikeProximal,
+    DykstrasProjectionProx,
     L1,
     L2,
-    L21,
     L21_plus_L1,
-    DykstraLikeProximal,
+    L21,
 )
 
 par1proj = {"nx": 10, "ny": 8, "axis": 0, "dtype": "float32"}  # even float32 dir0
@@ -35,20 +33,25 @@ par2prox = {"nx": 11, "ny": 14, "sigma": 2.0, "dtype": "float64"}  # odd float64
 def test_dykstras_projection(par: Dict[str, Any]) -> None:
     """DykstrasProjection and proximal/dual proximal of related indicator
     """
+
     rng = np.random.default_rng(10)
 
-    w = rng.normal(0., 1., par['nx']).astype(par['dtype'])
-    b = rng.normal(0., 1.)
+    w = rng.normal(10., 1., par['nx']).astype(par['dtype'])
+    w /= np.linalg.norm(w)  # unit normal toward (10, ..., 10)
+    b = rng.uniform(0.1, 0.45)
     half_space = HalfSpaceProj(w, b)
 
-    eucl = EuclideanBallProj(np.zeros(par['nx']), rng.uniform(0.1, 1.0))
+    # radius is larger then b of the halfspace
+    eucl = EuclideanBallProj(np.zeros(par['nx']), rng.uniform(0.5, 1.0))
 
+    # box is not smaller than the Euclidean ball
     box = BoxProj(
-        rng.uniform(-1.0, -0.1, par['nx']),
-        rng.uniform(0.1, 1.0, par['nx'])
+        rng.uniform(-1.0, -0.5, par['nx']),
+        rng.uniform(0.5, 1.0, par['nx'])
     )
 
-    x = rng.normal(0., 2., par['nx']).astype(par['dtype'])
+    # init x around (10, ..., 10) so that x is outside the halfspace
+    x = rng.normal(10., 1., par['nx']).astype(par['dtype'])
 
     tau = 2.
 
@@ -76,7 +79,19 @@ def test_dykstras_projection(par: Dict[str, Any]) -> None:
         [box, eucl, half_space],
     ]
     for proj in projections:
-        d = DykstrasProjectionProx(proj)
+
+        # different torelance for float32 and float64
+        tol = float(np.finfo(par['dtype']).resolution) * 10.  # pylint: disable=no-member
+
+        d = DykstrasProjectionProx(proj, tol=tol, max_iter=1000)
+
+        # evaluation
+        assert d(x) is False
+        xp = d.prox(x, 1.0)
+        assert d(xp) is True
+
+        # prox / dualprox
+        tau = 2.0
         assert moreau(d, x, tau)
 
         if len(proj) == 2:

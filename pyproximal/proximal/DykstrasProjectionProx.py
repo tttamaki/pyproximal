@@ -17,6 +17,8 @@ class DykstrasProjectionProx(ProxOperator):
         A list of projection functions :math:`P_1, \ldots, P_m`.
     max_iter : :obj:`int`, optional, default=10
         The maximum number of iterations.
+    tol : :obj:`float`, optional, default=1e-6
+        Torrelance to stop the iteration.
     use_parallel : :obj:`bool`, optional, default=False
         If True, use the parallel version when $m=2$.
 
@@ -36,21 +38,30 @@ class DykstrasProjectionProx(ProxOperator):
     def __init__(
         self,
         projections: List[Callable[[NDArray], NDArray]],
-        max_iter: int = 10,
+        max_iter: int = 100,
+        tol: float = 1e-6,
         use_parallel: bool = False,
     ) -> None:
         super().__init__(None, False)
         self.projections = projections
-        self.max_iter = max_iter
+
+        # The tolerance for the indicator function is set to 10 times larger
+        # than the tolerance used in Dykstra's projection. This is because
+        # using the same tolerance does not guarantee that the condition
+        # will hold even after the convergence of Dykstra's algorithm.
+        self.tol = tol * 10
+
         self.dykstras_projection = \
             DykstrasProjection(
-                self.projections,
-                self.max_iter,
-                use_parallel
+                projections=self.projections,
+                max_iter=max_iter,
+                tol=tol,
+                use_parallel=use_parallel,
             )
 
     def __call__(self, x: NDArray) -> bool:
-        return all(np.allclose(x, proj(x)) for proj in self.projections)
+        return all(np.abs(x - proj(x)).max() < self.tol
+                   for proj in self.projections)
 
     @_check_tau
     def prox(self, x: NDArray, tau: float, **kwargs: Any) -> NDArray:
