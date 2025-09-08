@@ -218,7 +218,6 @@ class DykstrasProjection():
 
         for _ in range(self.max_iter):
             u_old = u.copy()
-            # u_prev = u.copy()
             u_prev = np.array([u.copy() for _ in range(m)])
 
             for i in range(m):
