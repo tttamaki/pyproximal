@@ -18,7 +18,7 @@ class DykstraLikeProximal(ProxOperator):
     weights : :obj:`List[float] | None`, optional, default=None
         A list of weights for the weighted sum. Defaults to None, which means
         :math:`w_1 = \cdots = w_m = \frac{1}{m}.`
-    max_iter : :obj:`int`, optional, default=100
+    max_iter : :obj:`int`, optional, default=1000
         The maximum number of iterations.
     tol : :obj:`float`, optional, default=1e-7
         Torrelance to stop the iteration.
@@ -130,7 +130,7 @@ class DykstraLikeProximal(ProxOperator):
         self,
         ops: List[ProxOperator],
         weights: NDArray | List[float] | None = None,
-        max_iter: int = 100,
+        max_iter: int = 1000,
         tol: float = 1e-7,
         use_parallel: bool = False,
         use_original_tau: bool = False,
