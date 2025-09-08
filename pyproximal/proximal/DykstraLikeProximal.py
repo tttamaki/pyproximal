@@ -10,6 +10,7 @@ class DykstraLikeProximal(ProxOperator):
     r"""Proximal operator of a sum of two or more convex functions
     using Dykstra-like algorithm.
 
+
     Parameters
     ----------
     ops : :obj:`List[ProxOperator]`
@@ -23,6 +24,7 @@ class DykstraLikeProximal(ProxOperator):
         Torrelance to stop the iteration.
     use_parallel : :obj:`bool`, optional, default=False
         If True, use the parallel version when $m=2$.
+
 
     Notes
     -----
@@ -38,6 +40,7 @@ class DykstraLikeProximal(ProxOperator):
 
     using parallel Dykstra-like algorithm.
 
+
     For :math:`m=2`:
     The proximal mapping :math:`\prox_{\tau f + g}(\mathbf{x})` of
     :math:`\mathbf{x}` is computed by the Dykstra-like algorithm [1]_, [2]_:
@@ -49,7 +52,6 @@ class DykstraLikeProximal(ProxOperator):
       * :math:`\mathbf{p}^{(k+1)} = \mathbf{p}^{(k)} + \mathbf{x}^{(k)} - \mathbf{y}^{(k)}`
       * :math:`\mathbf{x}^{(k+1)} = \prox_{\tau f}(\mathbf{y}^{(k)} + \mathbf{q}^{(k)})`
       * :math:`\mathbf{q}^{(k+1)} = \mathbf{q}^{(k)} + \mathbf{y}^{(k)} - \mathbf{x}^{(k+1)}`
-
 
 
     For :math:`m \ge 2`:
@@ -67,9 +69,33 @@ class DykstraLikeProximal(ProxOperator):
         * :math:`\mathbf{z}_{i}^{(k+1)} = \mathbf{z}_{i}^{(k)} + \mathbf{x}^{(k+1)} - \prox_{\tau f_i} (\mathbf{z}_{i}^{(k)})`
 
 
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from pyproximal.proximal import L1, L2, DykstraLikeProximal
+    >>> from pylops import MatrixMult
+    >>> rng = np.random.default_rng()
+
+    >>> A = MatrixMult(rng.normal(0., 1., size=(3, 5)))
+    >>> b = rng.normal(0., 1., size=3)
+    >>> sigma = rng.normal(0., 1.)
+    >>> l2_term = L2(A, b)
+    >>> l1_term = L1(sigma=sigma)
+
+    >>> # for computing prox of ||Ax - b||_2^2 + sigma ||x||_1
+    >>> dykstra = DykstraLikeProximal([l2_term, l1_term])
+
+    >>> x = rng.normal(0., 5., size=5)
+    >>> tau = 1.0
+    >>> prox_x = dykstra.prox(x, tau)
+    >>> print("x      =", x)
+    >>> print("prox(x)=", prox_x)
+    x      = [-5.23899402  0.87338035  2.4931376  -3.65777431 -4.6659751 ]
+    prox(x)= [ 1.73959272  0.94078765  1.37338828 -2.95585083 -4.45746826]
+
+
     References
     ----------
-
     .. [1] Combettes, P.L., Pesquet, J.-C., 2011. Proximal Splitting Methods in
         Signal Processing, in Fixed-Point Algorithms for Inverse Problems in
         Science and Engineering, Springer, pp. 185-212. Algorithm 10.18.
@@ -98,7 +124,6 @@ class DykstraLikeProximal(ProxOperator):
     projection.DykstrasProjection :
         The convex projection to the intersection of convex sets
         using Dykstra's algorithm.
-
     """
 
     def __init__(
@@ -108,19 +133,25 @@ class DykstraLikeProximal(ProxOperator):
         max_iter: int = 100,
         tol: float = 1e-7,
         use_parallel: bool = False,
-        use_original_eq: bool = False,
+        use_original_tau: bool = False,
     ) -> None:
         super().__init__(None, False)
         assert len(ops) > 0
         self.ops = ops
         self.max_iter = max_iter
-        self.use_parallel = use_parallel
         if weights is None:
             self.w = [1. / len(self.ops)] * len(self.ops)
         else:
             self.w = weights
         self.tol = tol
-        self.use_original_eq = use_original_eq
+        self.use_original_tau = use_original_tau
+
+        if len(ops) == 1:
+            self._prox = self._single_prox
+        elif len(ops) == 2 and not use_parallel:
+            self._prox = self._dykstra_like_proximal_algorithm
+        else:
+            self._prox = self._parallel_dykstra_like_proximal_algorithm
 
     def __call__(self, x: NDArray) -> bool | float:
         """Proximable function
@@ -152,16 +183,28 @@ class DykstraLikeProximal(ProxOperator):
 
     @_check_tau
     def prox(self, x: NDArray, tau: float, **kwargs: Any) -> NDArray:
-        if len(self.ops) == 1:
-            return self.ops[0].prox(x, tau)
+        return self._prox(x, tau)
 
-        if len(self.ops) == 2 and not self.use_parallel:
-            return self.dykstra_like_proximal_algorithm(x, tau)
+    def _single_prox(
+        self, x0: NDArray, tau: float
+    ) -> NDArray:
+        r"""Compute :math:`\prox_{\tau \ f}(\mathbf{x})` for :math:`m = 1`.
 
-        return self.parallel_dykstra_like_proximal_algorithm(x, tau)
+        Parameters
+        ----------
+        x : :obj:`np.ndarray`
+            Vector
+        tau : :obj:`float`
+            Positive scalar weight
 
-    @_check_tau
-    def dykstra_like_proximal_algorithm(
+        Returns
+        -------
+        :obj:`np.ndarray`
+            prox of x
+        """
+        return self.ops[0].prox(x0, tau)
+
+    def _dykstra_like_proximal_algorithm(
         self, x0: NDArray, tau: float
     ) -> NDArray:
         r"""Compute :math:`\prox_{\tau \ f + g}(\mathbf{x})` for :math:`m = 2`.
@@ -177,7 +220,6 @@ class DykstraLikeProximal(ProxOperator):
         -------
         :obj:`np.ndarray`
             prox of x
-
         """
         x = x0.copy()
         p = np.zeros_like(x)
@@ -196,8 +238,7 @@ class DykstraLikeProximal(ProxOperator):
 
         return x
 
-    @_check_tau
-    def parallel_dykstra_like_proximal_algorithm(
+    def _parallel_dykstra_like_proximal_algorithm(
         self, x0: NDArray, tau: float
     ) -> NDArray:
         r"""Compute :math:`\prox_{\tau \ \sum_{i=1}^m w_i f_i}` for :math:`m \ge 2`.
@@ -213,21 +254,22 @@ class DykstraLikeProximal(ProxOperator):
         -------
         :obj:`np.ndarray`
             prox of x
-
         """
         x = x0.copy()
         m = len(self.ops)
         z = [x0.copy() for _ in range(m)]
 
+        if self.use_original_tau:  # not default
+            # This is in the literature, but doesn't pass the tests.
+            taus = [tau] * m
+        else:  # default
+            # This one passes the tests, but is not shown in the literature.
+            taus = [tau / self.w[i] for i in range(m)]
+
         for _ in range(self.max_iter):
             x_old = x.copy()
 
-            if self.use_original_eq:  # not default
-                # This is in the literature, but doesn't pass the tests.
-                prox_z = [self.ops[i].prox(z[i], tau) for i in range(m)]
-            else:  # default
-                # This one passes the tests, but is not shown in the literature.
-                prox_z = [self.ops[i].prox(z[i], tau / self.w[i]) for i in range(m)]
+            prox_z = [self.ops[i].prox(z[i], taus[i]) for i in range(m)]
 
             x = np.zeros_like(x)
             for i in range(m):

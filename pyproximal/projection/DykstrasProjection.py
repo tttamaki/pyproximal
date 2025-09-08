@@ -7,6 +7,7 @@ class DykstrasProjection():
     r"""The convex projection to the intersection of convex sets
     using Dykstra's algorithm.
 
+
     Parameters
     ----------
     projections : :obj:`List[Callable[[np.ndarray], np.ndarray]]`
@@ -15,6 +16,7 @@ class DykstrasProjection():
         The maximum number of iterations.
     use_parallel : :obj:`bool`, optional, default=False
         If True, use the parallel version when $m=2$.
+
 
     Notes
     -----
@@ -27,6 +29,7 @@ class DykstrasProjection():
 
     is the intersection of :math:`C_i` provided :math:`C \neq \emptyset`.
 
+
     For :math:`m=2`, the projection :math:`P_C(x)` of :math:`x` is computed
     by the Dykstra's algorithm [1]_, [2]_, [3]_:
 
@@ -37,6 +40,7 @@ class DykstrasProjection():
       * :math:`p_{k+1} = x_k + p_k - y_k`
       * :math:`x_{k+1} = P_2(y_k + q_k)`
       * :math:`q_{k+1} = y_k + q_k - x_{k+1}`
+
 
     For :math:`m \ge 2`, the projection :math:`P_C(x)` is computed
     by the parallel Dykstra's algorithm [5]_, [6]_. The following
@@ -56,9 +60,27 @@ class DykstrasProjection():
     (see :class:`pyproximal.DykstrasProjectionProx` for details).
 
 
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from pyproximal.projection import (
+    ...         BoxProj,
+    ...         EuclideanBallProj,
+    ...         DykstrasProjection
+    ...     )
+    >>> circle_1 = EuclideanBallProj(np.array([-2.5, 0.0]), 5)
+    >>> circle_2 = EuclideanBallProj(np.array([2.5, 0.0]), 5)
+    >>> circle_3 = EuclideanBallProj(np.array([0.0, 3.5]), 5)
+    >>> box = BoxProj(np.array([-5.0, -2.5]), np.array([5.0, 2.5]))
+    >>> dykstra_proj = DykstrasProjection(projections)
+    >>> rng = np.random.default_rng()
+    >>> x = rng.normal(0., 3.5, size=2)
+    >>> dykstra_proj(x)
+    array([-1.85983147, -1.14123118])
+
+
     References
     ----------
-
     .. [1] Bauschke, H.H., Borwein, J.M., 1994. Dykstra's Alternating
         Projection Algorithm for Two Sets. Journal of Approximation Theory 79,
         418-443. https://doi.org/10.1006/jath.1994.1136
@@ -102,6 +124,13 @@ class DykstrasProjection():
         self.max_iter = max_iter
         self.use_parallel = use_parallel
 
+        if len(projections) == 1:
+            self._projection = self._single_projection
+        elif len(projections) == 2 and not use_parallel:
+            self._projection = self._dykstra_projection
+        else:
+            self._projection = self._parallel_dykstra_projection
+
     def __call__(self, x: NDArray) -> NDArray:
         r"""compute projection :math:`P_C(x)` of :math:`x`.
 
@@ -116,15 +145,25 @@ class DykstrasProjection():
             projection of x
 
         """
-        if len(self.projections) == 1:
-            return self.projections[0](x)
+        return self._projection(x)
 
-        if len(self.projections) == 2 and not self.use_parallel:
-            return self.dykstra_projection(x)
+    def _single_projection(self, x0: NDArray) -> NDArray:
+        r"""Compute projection :math:`P_C(x)` for :math:`m=1`.
 
-        return self.parallel_dykstra_projection(x)
+        Parameters
+        ----------
+        x : :obj:`numpy.ndarray`
+            A point
 
-    def dykstra_projection(self, x0: NDArray) -> NDArray:
+        Returns
+        -------
+        :obj:`numpy.ndarray`
+            projection of x
+
+        """
+        return self.projections[0](x0)
+
+    def _dykstra_projection(self, x0: NDArray) -> NDArray:
         r"""Compute projection :math:`P_C(x)` for :math:`m=2`.
 
         Parameters
@@ -154,7 +193,7 @@ class DykstrasProjection():
                 break
         return x
 
-    def parallel_dykstra_projection(self, x0: NDArray) -> NDArray:
+    def _parallel_dykstra_projection(self, x0: NDArray) -> NDArray:
         r"""Compute projection :math:`P_C(x)` for :math:`m \ge 2`.
 
         Parameters
