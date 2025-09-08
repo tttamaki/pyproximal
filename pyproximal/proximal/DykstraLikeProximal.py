@@ -82,7 +82,7 @@ class DykstraLikeProximal(ProxOperator):
     >>> l2_term = L2(A, b)
     >>> l1_term = L1(sigma=sigma)
 
-    >>> # for computing prox of ||Ax - b||_2^2 + sigma ||x||_1
+    >>> # for computing prox of 1/2 * ||Ax - b||_2^2 + sigma ||x||_1
     >>> dykstra = DykstraLikeProximal([l2_term, l1_term])
 
     >>> x = rng.normal(0., 5., size=5)
