@@ -267,12 +267,10 @@ class DykstraLikeProximal(ProxOperator):
         w = ncp.asarray(self.w)
 
         # NOTE:
-        # if self.use_original_tau:  # not default
-        #     # This is in the literature with tau=1, but doesn't pass the tests.
-        #     taus = [tau] * m
-        # else:  # default
-        #     # This one passes the tests, but is not shown in the literature.
-        #     taus = [tau / self.w[i] for i in range(m)]
+        # This is in the literature with tau=1, but doesn't pass the tests.
+        # - taus = [tau] * m
+        # This one passes the tests, but is not shown in the literature.
+        # - taus = [tau / self.w[i] for i in range(m)]
         taus = ncp.full(m, tau) if self.use_original_tau else tau / w
 
         for _ in range(self.max_iter):
