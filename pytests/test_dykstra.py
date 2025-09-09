@@ -93,7 +93,16 @@ def test_dykstras_projection(par: Dict[str, Any]) -> None:
         assert moreau(d, x, tau)
 
         if len(proj) == 2:
-            d = DykstrasProjectionProx(proj, use_parallel=True)
+            d = DykstrasProjectionProx(
+                proj, tol=tol, max_iter=1000, use_parallel=True)
+
+            # evaluation
+            assert d(x) is False
+            xp = d.prox(x, 1.0)
+            assert d(xp) is True
+
+            # prox / dualprox
+            tau = 2.0
             assert moreau(d, x, tau)
 
 
