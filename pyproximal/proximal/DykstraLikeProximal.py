@@ -255,16 +255,19 @@ class DykstraLikeProximal(ProxOperator):
         :obj:`np.ndarray`
             prox of x
         """
+        def setup_taus(m: int) -> List[float]:
+            if self.use_original_tau:  # not default
+                # This is in the literature with tau=1, but doesn't pass the tests.
+                taus = [tau] * m
+            else:  # default
+                # This one passes the tests, but is not shown in the literature.
+                taus = [tau / self.w[i] for i in range(m)]
+            return taus
+
         x = x0.copy()
         m = len(self.ops)
         z = [x0.copy() for _ in range(m)]
-
-        if self.use_original_tau:  # not default
-            # This is in the literature with tau=1, but doesn't pass the tests.
-            taus = [tau] * m
-        else:  # default
-            # This one passes the tests, but is not shown in the literature.
-            taus = [tau / self.w[i] for i in range(m)]
+        taus = setup_taus(m)
 
         for _ in range(self.max_iter):
             x_old = x.copy()
