@@ -1,7 +1,7 @@
 from typing import List, Any
 
-import numpy as np
 from pylops.utils.typing import NDArray
+from pylops.utils.backend import get_array_module
 
 from pyproximal.ProxOperator import ProxOperator, _check_tau
 
@@ -168,12 +168,14 @@ class DykstraLikeProximal(ProxOperator):
             - return the sum of numeric ops values if all boolean ops are True
             - return True if ops are all boolean (no numeric ops) and True
         """
+        ncp = get_array_module(x)
+
         # inspired by https://github.com/PyLops/pyproximal/issues/116
         prox_sum = 0.
         has_numeric = False
         for prox_op in self.ops:
             prox_x = prox_op(x)
-            if isinstance(prox_x, (bool, np.bool_)):
+            if isinstance(prox_x, (bool, ncp.bool_)):
                 if not prox_x:
                     return False
             else:  # float or int
@@ -221,9 +223,11 @@ class DykstraLikeProximal(ProxOperator):
         :obj:`np.ndarray`
             prox of x
         """
+        ncp = get_array_module(x0)
+
         x = x0.copy()
-        p = np.zeros_like(x)
-        q = np.zeros_like(x)
+        p = ncp.zeros_like(x)
+        q = ncp.zeros_like(x)
 
         for _ in range(self.max_iter):
             x_old = x.copy()
@@ -233,7 +237,7 @@ class DykstraLikeProximal(ProxOperator):
             x = self.ops[1].prox(y + q, tau)
             q = q + y - x
 
-            if np.abs(x - x_old).max() < self.tol:
+            if ncp.abs(x - x_old).max() < self.tol:
                 break
 
         return x
@@ -255,33 +259,32 @@ class DykstraLikeProximal(ProxOperator):
         :obj:`np.ndarray`
             prox of x
         """
-        def setup_taus(m: int) -> List[float]:
-            if self.use_original_tau:  # not default
-                # This is in the literature with tau=1, but doesn't pass the tests.
-                taus = [tau] * m
-            else:  # default
-                # This one passes the tests, but is not shown in the literature.
-                taus = [tau / self.w[i] for i in range(m)]
-            return taus
+        ncp = get_array_module(x0)
 
         x = x0.copy()
         m = len(self.ops)
-        z = [x0.copy() for _ in range(m)]
-        taus = setup_taus(m)
+        z = ncp.stack([x0.copy() for _ in range(m)])
+        w = ncp.asarray(self.w)
+
+        # NOTE:
+        # if self.use_original_tau:  # not default
+        #     # This is in the literature with tau=1, but doesn't pass the tests.
+        #     taus = [tau] * m
+        # else:  # default
+        #     # This one passes the tests, but is not shown in the literature.
+        #     taus = [tau / self.w[i] for i in range(m)]
+        taus = ncp.full(m, tau) if self.use_original_tau else tau / w
 
         for _ in range(self.max_iter):
             x_old = x.copy()
 
-            prox_z = [self.ops[i].prox(z[i], taus[i]) for i in range(m)]
+            prox_z = ncp.stack([self.ops[i].prox(z[i], taus[i]) for i in range(m)])
 
-            x = np.zeros_like(x)
-            for i in range(m):
-                x += self.w[i] * prox_z[i]
+            x = ncp.sum(w[:, None] * prox_z, axis=0)
 
-            for i in range(m):
-                z[i] = z[i] + x - prox_z[i]
+            z = z + x - prox_z
 
-            if np.abs(x - x_old).max() < self.tol:
+            if ncp.abs(x - x_old).max() < self.tol:
                 break
 
         return x
