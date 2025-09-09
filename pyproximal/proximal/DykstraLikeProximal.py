@@ -260,7 +260,7 @@ class DykstraLikeProximal(ProxOperator):
         z = [x0.copy() for _ in range(m)]
 
         if self.use_original_tau:  # not default
-            # This is in the literature, but doesn't pass the tests.
+            # This is in the literature with tau=1, but doesn't pass the tests.
             taus = [tau] * m
         else:  # default
             # This one passes the tests, but is not shown in the literature.

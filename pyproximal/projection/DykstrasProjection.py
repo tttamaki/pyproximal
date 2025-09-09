@@ -203,7 +203,7 @@ class DykstrasProjection():
             q = y + q - x
 
             if max(np.abs(x - x_old).max(),
-                    np.abs(y - x_old).max()) < self.tol:
+                   np.abs(y - x_old).max()) < self.tol:
                 break
         return x
 
