@@ -15,16 +15,17 @@ class DykstraLikeProximal(ProxOperator):
     ----------
     ops : :obj:`List[ProxOperator]`
         A list of proximable functions :math:`f_1, \ldots, f_m`.
-    weights : :obj:`List[float] | None`, optional, default=None
-        A list of weights for the weighted sum. Defaults to None, which means
-        :math:`w_1 = \cdots = w_m = \frac{1}{m}.`
+    weights : :obj:`np.ndarray` or :obj:`List[float]` or :obj:`None`, optional, default=None
+        Weights :math:`\sum_{i=1}^m w_i = 1, \ 0 < w_i < 1`,
+        used when :math:`m > 2`, or :math:`m = 2` and `use_parallel=True`.
+        Defaults to None, which means :math:`w_1 = \cdots = w_m = \frac{1}{m}.`
     max_iter : :obj:`int`, optional, default=1000
         The maximum number of iterations.
     tol : :obj:`float`, optional, default=1e-7
         Torrelance to stop the iteration.
     use_parallel : :obj:`bool`, optional, default=False
-        If True, use the parallel version when $m=2$.
-
+        The parallel version is used when :math:`m > 2`,
+        or :math:`m = 2` and `use_parallel=True`.
 
     Notes
     -----
@@ -265,12 +266,14 @@ class DykstraLikeProximal(ProxOperator):
         m = len(self.ops)
         z = ncp.stack([x0.copy() for _ in range(m)])
         w = ncp.asarray(self.w)
+        w /= w.sum()
 
         # NOTE:
-        # This is in the literature with tau=1, but doesn't pass the tests.
-        # - taus = [tau] * m
-        # This one passes the tests, but is not shown in the literature.
-        # - taus = [tau / self.w[i] for i in range(m)]
+        # - taus = [tau] * m  (not default)
+        #   - This is in the literature [3,4,5], but doesn't pass the tests.
+        # - taus = [tau / self.w[i] for i in range(m)]  (default)
+        #   - This one passes the tests, but is not shown in the literature,
+        #     inspired by the proof of Parallel Proximal Algorithm (PPXA).
         taus = ncp.full(m, tau) if self.use_original_tau else tau / w
 
         for _ in range(self.max_iter):
