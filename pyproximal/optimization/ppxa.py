@@ -1,19 +1,10 @@
-import time
-import warnings
-from math import sqrt
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, List, Optional
 
 import numpy as np
-from pylops.optimization.leastsquares import regularized_inversion
-from pylops.utils.backend import get_array_module, to_numpy
+
 from pylops.utils.typing import NDArray
-
-from pyproximal.proximal import L2
+from pylops.utils.backend import get_array_module
 from pyproximal.ProxOperator import ProxOperator
-from pyproximal.utils.bilinear import BilinearOperator
-
-if TYPE_CHECKING:
-    from pylops.linearoperator import LinearOperator
 
 
 def PPXA(
@@ -26,33 +17,34 @@ def PPXA(
     tol: Optional[float] = None,
     callback: Optional[Callable[..., None]] = None,
     show: bool = False,
-) -> Tuple[NDArray, NDArray]:
+) -> NDArray:
     r"""Parallel Proximal Algorithm (PPXA) for solving:
         :math:: \min_x  sum_{i=1}^m f_i(x)
         given proximal operators of :math:`f_i`.
 
     """
+    ncp = get_array_module(x0)
+
     m = len(prox_ops)
     if weights is None:
-        weights = np.ones(m) / m
-
-    if isinstance(x0, np.ndarray):
-        y = [x0.copy() for _ in range(m)]
-        x = x0.copy()
+        w = ncp.full(m, 1. / m)
     else:
-        assert len(x0) == m
-        y = [x0[i].copy() for i in range(m)]
-        x = sum(y) / m
+        w = ncp.asarray(weights)
 
+    if isinstance(x0, list) or x0.ndim == 2:
+        y = ncp.asarray(x0)
+    else:
+        y = ncp.full((m, x0.size), x0)
+
+    x = np.mean(y, axis=0)
     x_old = x.copy()
     for _ in range(niter):
 
-        p = [prox_ops[i].prox(y[i], tau / weights[i]) for i in range(m)]
+        p = ncp.stack([prox_ops[i].prox(y[i], tau / w[i]) for i in range(m)])
 
-        pn = sum(weights[i] * p[i] for i in range(m))
+        pn = np.sum(w[:, None] * p, axis=0)
 
-        for i in range(m):
-            y[i] = y[i] + lmd * (2 * pn - x - p[i])
+        y = y + lmd * (2 * pn - x - p)
 
         x = x + lmd * (pn - x)
 
