@@ -20,6 +20,7 @@ operators:
     TwIST                           Two-step Iterative Shrinkage/Threshold
     PlugAndPlay                     Plug-and-Play Prior with ADMM
     DouglasRachfordSplitting        Douglas-Rachford algorithm
+    PPXA                            Parallel Proximal Algorithm
 
 A list of solvers in ``pyproximal.optimization.proximaldual`` using both proximal
 and dual proximal operators:
@@ -46,4 +47,5 @@ on a special use of the Primal-Dual algorithm:
 
 """
 
-from . import primal, primaldual, bregman, segmentation, sr3, palm, pnp, ppxa
+from . import primaldual, bregman, segmentation, sr3, palm, pnp
+from .primal import *

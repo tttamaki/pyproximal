@@ -168,6 +168,7 @@ Primal
     ProximalPoint
     TwIST
     DouglasRachfordSplitting
+    PPXA
 
 .. currentmodule:: pyproximal.optimization.palm
 
