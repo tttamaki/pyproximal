@@ -1920,13 +1920,13 @@ def PPXA(  # pylint: disable=invalid-name
     else:
         y = ncp.full((m, x0.size), x0)  # y1_0 = y2_0 = ... = ym_0 = x0
 
-    x = np.mean(y, axis=0)
+    x = ncp.mean(y, axis=0)
     x_old = x.copy()
 
     for iiter in range(niter):
 
         p = ncp.stack([prox_ops[i].prox(y[i], tau / w[i]) for i in range(m)])
-        pn = np.sum(w[:, None] * p, axis=0)
+        pn = ncp.sum(w[:, None] * p, axis=0)
         y = y + eta * (2 * pn - x - p)
         x = x + eta * (pn - x)
 
@@ -1935,13 +1935,13 @@ def PPXA(  # pylint: disable=invalid-name
 
         if show:
             if iiter < 10 or niter - iiter < 10 or iiter % (niter // 10) == 0:
-                pf = np.sum([prox_ops[i](x) for i in range(m)])
+                pf = ncp.sum([prox_ops[i](x) for i in range(m)])
                 print(
-                    f"{iiter + 1:6d}  {np.real(to_numpy(x[0])):12.5e}  "
+                    f"{iiter + 1:6d}  {ncp.real(to_numpy(x[0])):12.5e}  "
                     f"{pf:10.3e}"
                 )
 
-        if np.abs(x - x_old).max() < tol:
+        if ncp.abs(x - x_old).max() < tol:
             break
 
         x_old = x
