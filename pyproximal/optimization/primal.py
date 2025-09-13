@@ -1806,23 +1806,22 @@ def PPXA(  # pylint: disable=invalid-name
     callback: Optional[Callable[..., None]] = None,
     show: bool = False,
 ) -> NDArray:
-    r"""Parallel Proximal Algorithm (PPXA) for solving
-        :math:: \min_x  sum_{i=1}^m f_i(x)
-        given proximal operators of :math:`f_i`.
+    r"""Parallel Proximal Algorithm (PPXA) for minimizing the sum of
+    proximal operators :math:`f_i`:
+
+    .. math:: \min_\mathbf{x} \sum_{i=1}^m f_i(\mathbf{x}).
 
     Parameters
     ----------
     prox_ops : :obj:`List[ProxOperator]`
         A list of proximable functions :math:`f_1, \ldots, f_m`.
-    x0 : :obj:`numpy.ndarray`
-        Initial vector
-
-        .. versionchanged:: 0.01
-            If the constraint violation exceeds gtol then
-
+    x0 : :obj:`np.ndarray` or :obj:`List[np.ndarray]`
+        Initial vector :math:`\mathbf{x}` if 1D :obj:`np.ndarray`,
+        or :math:`\mathbf{x}_{i}` for :math:`i=1,\ldots,m`
+        if :obj:`List[np.ndarray]` or 2D :obj:`np.ndarray`.
     tau : :obj:`float`
         Positive scalar weight
-    eta : :obj:`float`, optional
+    eta : :obj:`float`, optional, default=1.0
         Relaxation parameter (must be between 0 and 2, 0 excluded).
     weights : :obj:`np.ndarray` or :obj:`List[float]` or :obj:`None`, optional, default=None
         Weights :math:`\sum_{i=1}^m w_i = 1, \ 0 < w_i < 1`,
@@ -1832,10 +1831,10 @@ def PPXA(  # pylint: disable=invalid-name
     tol : :obj:`float`, optional, default=1e-7
         Absolute torrelance between successive solutions
         to stop the iteration.
-    callbacky : :obj:`bool`, optional
-        Modify callback signature to (``callback(x, y)``)
-        when ``callbacky=True``
-    show : :obj:`bool`, optional
+    callback : :obj:`callable`, optional, default=None
+        Function with signature (``callback(x)``) to call after each iteration
+        where ``x`` is the current model vector
+    show : :obj:`bool`, optional, default=False
         Display iterations log
 
 
@@ -1847,8 +1846,52 @@ def PPXA(  # pylint: disable=invalid-name
 
     Notes
     -----
-    TODO: write docstring
+    Given a set of proximable functions :math:`f_i`,
+    this class solves the following minimization problem
+    using Parallel Proximal Algorithm (PPXA):
 
+    .. math:: \min_\mathbf{x} \sum_{i=1}^m f_i(\mathbf{x}),
+
+    where :math:`f_i(\mathbf{x})` are any convex
+    functions that has known proximal operators.
+
+    The PPXA can be expressed by the following recursion [1]_, [2]_, [3]_, [4]_,
+    with weights :math:`\sum_{i=1}^m w_i = 1, \ 0 < w_i < 1`,
+    and :math:`0 < \eta < 2`:
+
+    * :math:`\mathbf{y}_{i}^{(0)} = \mathbf{x}` or :math:`\mathbf{y}_{i}^{(0)} = \mathbf{x}_{i}` for :math:`i=1,\ldots,m`
+    * :math:`\mathbf{x}^{(0)} = \sum_{i=1}^m w_i \mathbf{y}_{i}^{(0)}`
+    * for :math:`k = 1, \ldots`
+
+      * for :math:`i = 1, \ldots, m`
+
+        * :math:`\mathbf{p}_{i}^{(k)} = \prox_{\frac{\tau}{w_i} f_i} (\mathbf{y}_{i}^{(k)})`
+
+      * :math:`\mathbf{p}^{(k)} = \sum_{i=1}^{m} w_i \mathbf{p}_{i}^{(k)}`
+      * for :math:`i = 1, \ldots, m`
+
+        * :math:`\mathbf{y}_{i}^{(k+1)} = \mathbf{y}_{i}^{(k)} + \eta (2 \mathbf{p}^{(k)} - \mathbf{x}^{(k)} - \mathbf{p}_i^{(k)})`
+
+      * :math:`\mathbf{x}^{(k+1)} = \mathbf{x}^{(k)} + \eta (\mathbf{p}^{(k)} - \mathbf{x}^{(k)})`
+
+
+    References
+    ----------
+    .. [1] Combettes, P.L., Pesquet, J.-C., 2008. A proximal decomposition
+        method for solving convex variational inverse problems. Inverse Problems
+        24, 065014. https://doi.org/10.1088/0266-5611/24/6/065014
+        https://arxiv.org/abs/0807.2617
+    .. [2] Combettes, P.L., Pesquet, J.-C., 2011. Proximal Splitting Methods in
+        Signal Processing, in Fixed-Point Algorithms for Inverse Problems in
+        Science and Engineering, Springer, pp. 185-212. Algorithm 10.27.
+        https://doi.org/10.1007/978-1-4419-9569-8_10
+    .. [3] Bauschke, H.H., Combettes, P.L., 2011. Convex Analysis and Monotone
+        Operator Theory in Hilbert Spaces, 1st ed, CMS Books in Mathematics.
+        Springer, New York, NY. Proposition 27.8.
+        https://doi.org/10.1007/978-1-4419-9467-7
+    .. [4] Ryu, E.K., Yin, W., 2022. Large-Scale Convex Optimization: Algorithms
+        & Analyses via Monotone Operators. Cambridge University Press,
+        Cambridge. Exercise 2.38 https://doi.org/10.1017/9781009160865
 
 
     """
