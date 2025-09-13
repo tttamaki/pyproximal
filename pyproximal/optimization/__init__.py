@@ -21,6 +21,7 @@ operators:
     PlugAndPlay                     Plug-and-Play Prior with ADMM
     DouglasRachfordSplitting        Douglas-Rachford algorithm
     PPXA                            Parallel Proximal Algorithm
+    ConcensusADMM                   Concensus problem with ADMM
 
 A list of solvers in ``pyproximal.optimization.proximaldual`` using both proximal
 and dual proximal operators:

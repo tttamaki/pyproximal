@@ -1951,3 +1951,136 @@ def PPXA(  # pylint: disable=invalid-name
         print("---------------------------------------------------------\n")
 
     return x
+
+
+def ConcensusADMM(  # pylint: disable=invalid-name
+    prox_ops: List[ProxOperator],
+    x0: NDArray,
+    tau: float,
+    niter: int = 1000,
+    tol: Optional[float] = 1e-7,
+    callback: Optional[Callable[..., None]] = None,
+    show: bool = False,
+) -> NDArray:
+    r"""Solving a consensus problem with ADMM for minimizing the sum of
+    proximal operators :math:`f_i`:
+
+    .. math::
+
+        \min_\mathbf{x} \sum_{i=1}^m f_i(\mathbf{x}) \quad \text{s.t.}
+        \quad \mathbf{x_i} = \mathbf{z} \text{ for } i = 1, \ldots, m
+
+    Parameters
+    ----------
+    prox_ops : :obj:`List[ProxOperator]`
+        A list of proximable functions :math:`f_1, \ldots, f_m`.
+    x0 : :obj:`np.ndarray`
+        Initial vector
+    tau : :obj:`float`
+        Positive scalar weight
+    max_iter : :obj:`int`, optional, default=1000
+        The maximum number of iterations.
+    tol : :obj:`float`, optional, default=1e-7
+        Absolute torrelance between successive solutions
+        to stop the iteration.
+    callback : :obj:`callable`, optional, default=None
+        Function with signature (``callback(x)``) to call after each iteration
+        where ``x`` is the current model vector
+    show : :obj:`bool`, optional, default=False
+        Display iterations log
+
+
+    Returns
+    -------
+    x : :obj:`numpy.ndarray`
+        Inverted model
+
+
+    Notes
+    -----
+    Given a set of proximable functions :math:`f_i`,
+    this class solves the following concensus problem using ADMM:
+
+    .. math::
+
+        \min_\mathbf{x} \sum_{i=1}^m f_i(\mathbf{x}) \quad \text{s.t.}
+        \quad \mathbf{x_i} = \mathbf{z} \text{ for } i = 1, \ldots, m
+
+    where :math:`f_i(\mathbf{x})` are any convex
+    functions that has known proximal operators.
+
+    The ADMM for the concensus problem can be expressed by the following
+    recursion [1]_, [2]_:
+
+    * :math:`\bar{\mathbf{x}}^{(0)} = \mathbf{x}`
+    * for :math:`k = 1, \ldots`
+
+      * for :math:`i = 1, \ldots, m`
+
+        * :math:`\mathbf{x}_i^{(k+1)} = \mathrm{prox}_{\tau f_i} \left(\bar{\mathbf{x}}^{(k)} - \mathbf{y}_i^{(k)}\right)`
+
+      * :math:`\bar{\mathbf{x}}^{(k+1)} = \frac{1}{m} \sum_{i=1}^m \mathbf{x}_i^{(k)}`
+
+      * for :math:`i = 1, \ldots, m`
+
+        * :math:`\mathbf{y}_i^{(k+1)} = \mathbf{y}_i^{(k)} + \mathbf{x}_i^{(k+1)} - \bar{\mathbf{x}}^{(k+1)}`
+
+
+    References
+    ----------
+    .. [1] Boyd, S., Parikh, N., Chu, E., Peleato, B., Eckstein, J., 2011.
+        Distributed Optimization and Statistical Learning via the Alternating
+        Direction Method of Multipliers. Foundations and Trends in Machine Learning,
+        Vol. 3, No. 1, pp 1-122. Section 7.1. https://doi.org/10.1561/2200000016
+    .. [2] Parikh, N., Boyd, S., 2014. Proximal Algorithms. Foundations and
+        Trends in Optimization, Vol. 1, No. 3, pp 127-239.
+        Section 5.2.1. https://doi.org/10.1561/2400000003
+
+
+    """
+    if show:
+        tstart = time.time()
+        print(
+            "Concensus ADMM\n"
+            "---------------------------------------------------------"
+        )
+        for i, prox_op in enumerate(prox_ops):
+            print(f"Proximal operator (f{i}): {type(prox_op)}")
+        print(f"tau = {tau:10e}\tniter = {niter:d}\n")
+        head = "   Itn       x[0]          J=sum_i f_i"
+        print(head)
+
+    ncp = get_array_module(x0)
+
+    m = len(prox_ops)
+    x_bar = x0.copy()
+    x_bar_old = x0.copy()
+    y = ncp.zeros_like(x0)
+
+    for iiter in range(niter):
+
+        x = ncp.stack([prox_ops[i].prox(x_bar - y[i], tau) for i in range(m)])
+        x_bar = ncp.mean(x, axis=0)
+        y = y + x - x_bar
+
+        if callback is not None:
+            callback(x_bar)
+
+        if show:
+            if iiter < 10 or niter - iiter < 10 or iiter % (niter // 10) == 0:
+                pf = ncp.sum([prox_ops[i](x_bar) for i in range(m)])
+                print(
+                    f"{iiter + 1:6d}  {ncp.real(to_numpy(x_bar[0])):12.5e}  "
+                    f"{pf:10.3e}"
+                )
+
+        if ncp.abs(x_bar - x_bar_old).max() < tol:
+            break
+
+        x_bar_old = x_bar
+
+    if show:
+        print(f"\nTotal time (s) = {time.time() - tstart:.2f}")
+        print("---------------------------------------------------------\n")
+
+    return x_bar

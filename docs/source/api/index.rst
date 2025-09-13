@@ -169,6 +169,7 @@ Primal
     TwIST
     DouglasRachfordSplitting
     PPXA
+    ConcensusADMM
 
 .. currentmodule:: pyproximal.optimization.palm
 
