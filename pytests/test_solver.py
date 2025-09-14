@@ -250,7 +250,7 @@ def test_ppxa_with_admm(par: Dict[str, Any]) -> None:
 
         y = Rop @ x
 
-        l2 = L2(Op=Rop, b=y, niter=50, warm=True)
+        l2 = L2(Op=Rop, b=y, niter=50, warm=False)
         l1 = L1(sigma=5e-1)
 
         # Step size
@@ -268,7 +268,7 @@ def test_ppxa_with_admm(par: Dict[str, Any]) -> None:
 @pytest.mark.parametrize("par", [(par1), (par2)])
 def test_consensus_admm_with_admm(par: Dict[str, Any]) -> None:
     """Check equivalency of ConcensusADMM and ADMM
-    when using a single regularization term
+    when two proximable functions
     """
     for seed in range(10):
         rng = np.random.default_rng(seed)
@@ -285,7 +285,7 @@ def test_consensus_admm_with_admm(par: Dict[str, Any]) -> None:
 
         y = Rop @ x
 
-        l2 = L2(Op=Rop, b=y, niter=50, warm=True)
+        l2 = L2(Op=Rop, b=y, niter=50, warm=False)
         l1 = L1(sigma=5e-1)
 
         # Step size
@@ -298,4 +298,61 @@ def test_consensus_admm_with_admm(par: Dict[str, Any]) -> None:
             [l2, l1], x0=np.zeros(m), tau=tau, niter=15000, show=True, tol=1e-7)
 
         assert_array_almost_equal(xadmm, xcadmm, decimal=2, err_msg=f"seed={seed}")
-        print(f"seed={seed}")
+
+
+@pytest.mark.parametrize("par", [(par1), (par2)])
+def test_consensus_admm_equals_lasso(par: Dict[str, Any]) -> None:
+    """Check equivalency of ConcensusADMM and ADMM
+    when more than two proximable functions for lasso
+    """
+    m = par["m"]
+    lmd = 1e-2
+    niter = 15000
+    n_l2_ops = 3
+
+    for seed in range(5):
+        rng = np.random.default_rng(seed)
+
+        # Define sparse model
+        x_true = np.zeros(m)
+        nnz = rng.integers(3, m // 2)
+        support = rng.choice(m, size=nnz, replace=False)
+        x_true[support] = rng.normal(0.0, 1.0, size=len(support))
+
+        # Random mixing matrix
+        R_list, y_list = [], []
+        for ni in rng.integers(3, 10, size=n_l2_ops):
+            R = rng.normal(0.0, 1.0, size=(ni, m))
+            R_list.append(R)
+            y_list.append(R @ x_true)
+        l2_ops = [
+            L2(Op=MatrixMult(Ri), b=yi, niter=50, warm=False)
+            for Ri, yi in zip(R_list, y_list)
+        ]
+        l1_op = L1(sigma=lmd)
+
+        Rop_stack = MatrixMult(np.vstack(R_list))
+        y_stack = np.concatenate(y_list)
+        l2_stack = L2(Op=Rop_stack, b=y_stack, niter=50, warm=False)
+        l1_stack = L1(sigma=lmd)
+
+        # Step size
+        L = (Rop_stack.H * Rop_stack).eigs(1).real.item()
+        tau = 0.5 / L
+
+        x_cons = ConcensusADMM(
+            prox_ops=[*l2_ops, l1_op],
+            x0=np.zeros(m),
+            tau=tau,
+            niter=niter,
+            tol=1e-7,
+            show=False,
+        )
+
+        x_lasso, _ = ADMM(
+            l2_stack, l1_stack, x0=np.zeros(m), tau=tau, niter=niter, show=False
+        )
+
+        assert_array_almost_equal(
+            x_cons, x_lasso, decimal=2, err_msg=f"seed={seed}"
+        )
