@@ -325,21 +325,26 @@ def test_consensus_admm_equals_lasso(par: Dict[str, Any]) -> None:
             R = rng.normal(0.0, 1.0, size=(ni, m))
             R_list.append(R)
             y_list.append(R @ x_true)
+
+        # 1/2||R1||_2^2 + 1/2||R2||_2^2 + 1/2||R3||_2^2
         l2_ops = [
             L2(Op=MatrixMult(Ri), b=yi, niter=50, warm=False)
             for Ri, yi in zip(R_list, y_list)
         ]
-        l1_op = L1(sigma=lmd)
 
+        # 1/2 || [R1; R2; R3] ||_2^2
         Rop_stack = MatrixMult(np.vstack(R_list))
         y_stack = np.concatenate(y_list)
         l2_stack = L2(Op=Rop_stack, b=y_stack, niter=50, warm=False)
-        l1_stack = L1(sigma=lmd)
+
+        # ||x||_1
+        l1_op = L1(sigma=lmd)
 
         # Step size
         L = (Rop_stack.H * Rop_stack).eigs(1).real.item()
         tau = 0.5 / L
 
+        # 1/2||R1||_2^2 + 1/2||R2||_2^2 + 1/2||R3||_2^2 + ||x||_1
         x_cons = ConcensusADMM(
             prox_ops=[*l2_ops, l1_op],
             x0=np.zeros(m),
@@ -349,8 +354,9 @@ def test_consensus_admm_equals_lasso(par: Dict[str, Any]) -> None:
             show=False,
         )
 
+        # 1/2 || [R1; R2; R3] ||_2^2 + ||x||_1
         x_lasso, _ = ADMM(
-            l2_stack, l1_stack, x0=np.zeros(m), tau=tau, niter=niter, show=False
+            l2_stack, l1_op, x0=np.zeros(m), tau=tau, niter=niter, show=False
         )
 
         assert_array_almost_equal(
