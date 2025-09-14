@@ -326,7 +326,7 @@ def test_consensus_admm_equals_lasso(par: Dict[str, Any]) -> None:
             R_list.append(R)
             y_list.append(R @ x_true)
 
-        # 1/2||R1||_2^2 + 1/2||R2||_2^2 + 1/2||R3||_2^2
+        # 1/2||R1||_2^2, 1/2||R2||_2^2, 1/2||R3||_2^2
         l2_ops = [
             L2(Op=MatrixMult(Ri), b=yi, niter=50, warm=False)
             for Ri, yi in zip(R_list, y_list)
