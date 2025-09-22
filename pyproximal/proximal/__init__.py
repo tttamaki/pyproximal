@@ -71,8 +71,8 @@ from .QuadraticEnvelope import *
 from .SingularValuePenalty import *
 from .Hankel import *
 from .HalfSpace import *
-from .DykstrasProjectionProx import *
-from .DykstraLikeProximal import *
+from .GenericIntersection import *
+from .Sum import *
 
 
 __all__ = [

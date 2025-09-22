@@ -30,7 +30,7 @@ from .Intersection import *
 from .AffineSet import *
 from .Hankel import *
 from .HalfSpace import *
-from .DykstrasProjection import *
+from .GenericIntersection import *
 
 __all__ = [
     "BoxProj",
