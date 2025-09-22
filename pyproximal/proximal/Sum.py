@@ -21,7 +21,7 @@ class Sum(ProxOperator):
         A list of proximable functions :math:`f_1, \ldots, f_m`.
     weights : :obj:`np.ndarray` or :obj:`List[float]` or :obj:`None`, optional, default=None
         Weights :math:`\sum_{i=1}^m w_i = 1, \ 0 < w_i < 1`,
-        used when :math:`m > 2`, or :math:`m = 2` and `use_parallel=True`.
+        used when :math:`m > 2`, or :math:`m = 2` and ``use_parallel=True``.
         Defaults to None, which means :math:`w_1 = \cdots = w_m = \frac{1}{m}.`
     max_iter : :obj:`int`, optional, default=1000
         The maximum number of iterations.
@@ -31,6 +31,9 @@ class Sum(ProxOperator):
     use_parallel : :obj:`bool`, optional, default=False
         The parallel version is used when :math:`m > 2`,
         or :math:`m = 2` and `use_parallel=True`.
+    use_original_tau : :obj:`bool`, optional, default=False
+        Use the original value of :math:`\tau` (``True``)
+        or the scaled version :math:`\tau_i = \tau / w_i` (``False``).
 
     Notes
     -----
@@ -67,10 +70,13 @@ class Sum(ProxOperator):
     * :math:`\mathbf{x}^{(0)} = \mathbf{z}_{1}^{(0)} = \cdots = \mathbf{z}_{m}^{(0)} = \mathbf{x}`
     * for :math:`k = 1, \ldots`
 
-      * :math:`\mathbf{x}^{(k+1)} = \sum_{i=1}^{m} w_i \prox_{\tau f_i} (\mathbf{z}_{i}^{(k)})`
+      * :math:`\mathbf{x}^{(k+1)} = \sum_{i=1}^{m} w_i \prox_{\tau_i f_i} (\mathbf{z}_{i}^{(k)})`
       * for :math:`i = 1, \ldots, m`
 
-        * :math:`\mathbf{z}_{i}^{(k+1)} = \mathbf{z}_{i}^{(k)} + \mathbf{x}^{(k+1)} - \prox_{\tau f_i} (\mathbf{z}_{i}^{(k)})`
+        * :math:`\mathbf{z}_{i}^{(k+1)} = \mathbf{z}_{i}^{(k)} + \mathbf{x}^{(k+1)} - \prox_{\tau_i f_i} (\mathbf{z}_{i}^{(k)})`
+
+    Note that :math:`\tau_i = \tau / w_i` if ``use_original_tau==False`` (default),
+    otherwise :math:`\tau_i = \tau`.
 
     References
     ----------
