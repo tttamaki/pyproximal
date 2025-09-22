@@ -27,7 +27,7 @@ class Sum(ProxOperator):
         The maximum number of iterations.
     tol : :obj:`float`, optional, default=1e-7
         Tolerance on change of the solution (used as stopping criterion).
-        If ``tol=0``, run until ``niter`` is reached.
+        If ``tol=0``, run until ``max_iter`` is reached.
     use_parallel : :obj:`bool`, optional, default=False
         The parallel version is used when :math:`m > 2`,
         or :math:`m = 2` and `use_parallel=True`.
