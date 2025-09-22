@@ -14,7 +14,7 @@ class GenericIntersectionProj():
 
     Parameters
     ----------
-    projections : :obj:`List[Callable[[np.ndarray], np.ndarray]]`
+    projections : :obj:`list`
         A list of projection functions :math:`P_1, \ldots, P_m`.
     max_iter : :obj:`int`, optional, default=100
         The maximum number of iterations.
@@ -52,9 +52,9 @@ class GenericIntersectionProj():
     * :math:`u_m^{(0)} = x, z_1^{(0)} = \cdots = z_m^{(0)} = 0`,
     * for :math:`k = 1, 2, \ldots`
 
+      * :math:`u_0^{(k)} = u_m^{(k-1)}`
       * for :math:`i = 1, \ldots, m`
 
-        * :math:`u_0^{(k)} = u_m^{(k-1)}`
         * :math:`u_i^{(k)} = P_i(u_{i-1}^{(k)} + z_i^{(k-1)})`
         * :math:`z_i^{(k)} = z_i^{(k-1)} + u_{i-1}^{(k)} - u_i^{(k)}`
 
@@ -77,7 +77,7 @@ class GenericIntersectionProj():
         https://en.wikipedia.org/wiki/Dykstra%27s_projection_algorithm
 
     .. [4] Tibshirani, R.J., 2017. Dykstra's Algorithm, ADMM, and Coordinate
-        Descent: Connections, Insights, and Extensions, NeurIPS2017.
+        Descent: Connections, Insights, and Extensions, NeurIPS2017. Eq.(4).
         https://proceedings.neurips.cc/paper_files/paper/2017/hash/5ef698cd9fe650923ea331c15af3b160-Abstract.html
     .. [5] Bauschke, H.H., Combettes, P.L., 2011. Convex Analysis and Monotone
         Operator Theory in Hilbert Spaces, Theorem 29.2, 1st ed, Springer.

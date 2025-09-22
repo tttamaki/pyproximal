@@ -13,7 +13,7 @@ class GenericIntersectionProx(ProxOperator):
 
     Parameters
     ----------
-    projections : :obj:`List[Callable[[np.ndarray], np.ndarray]]`
+    projections : :obj:`list`
         A list of projection functions :math:`P_1, \ldots, P_m`.
     max_iter : :obj:`int`, optional, default=100
         The maximum number of iterations.

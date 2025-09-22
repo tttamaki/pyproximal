@@ -17,7 +17,7 @@ class Sum(ProxOperator):
 
     Parameters
     ----------
-    ops : :obj:`List[ProxOperator]`
+    ops : :obj:`list`
         A list of proximable functions :math:`f_1, \ldots, f_m`.
     weights : :obj:`np.ndarray` or :obj:`List[float]` or :obj:`None`, optional, default=None
         Weights :math:`\sum_{i=1}^m w_i = 1, \ 0 < w_i < 1`,
@@ -33,7 +33,7 @@ class Sum(ProxOperator):
 
     Notes
     -----
-    Given two :math:`f` and :math:`g`, or a set of proximable functions
+    Given two functions :math:`f` and :math:`g`, or a set of proximable functions
     :math:`f_i` and corresponding weights :math:`w_i` for :math:`i=1, \ldots, m`,
     this class computes the proximal operator of the sum of two functions
 
