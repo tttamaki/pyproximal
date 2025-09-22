@@ -3,7 +3,7 @@ from pylops.utils.typing import NDArray
 from pylops.utils.backend import get_array_module
 
 
-class DykstrasProjection():
+class GenericIntersectionProj():
     r"""The convex projection to the intersection of convex sets
     using Dykstra's algorithm.
 

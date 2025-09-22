@@ -4,10 +4,10 @@ import numpy as np
 from pylops.utils.typing import NDArray
 
 from pyproximal.ProxOperator import ProxOperator, _check_tau
-from pyproximal.projection import DykstrasProjection
+from pyproximal.projection import GenericIntersectionProj
 
 
-class DykstrasProjectionProx(ProxOperator):
+class GenericIntersectionProx(ProxOperator):
     r"""The proximal operator corresponding to the convex projection to the
     intersection of convex sets using Dykstra's algorithm.
 
@@ -85,7 +85,7 @@ class DykstrasProjectionProx(ProxOperator):
         self.tol = tol * 10
 
         self.dykstras_projection = \
-            DykstrasProjection(
+            GenericIntersectionProj(
                 projections=self.projections,
                 max_iter=max_iter,
                 tol=tol,

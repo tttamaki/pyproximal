@@ -6,7 +6,7 @@ from pylops.utils.backend import get_array_module
 from pyproximal.ProxOperator import ProxOperator, _check_tau
 
 
-class DykstraLikeProximal(ProxOperator):
+class Sum(ProxOperator):
     r"""Proximal operator of a sum of two or more convex functions
     using Dykstra-like algorithm.
 
