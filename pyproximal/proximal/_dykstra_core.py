@@ -35,7 +35,7 @@ def dykstra_two(
     step1: Proj,
     step2: Proj,
     *,
-    max_iter: int,
+    niter: int,
     tol: float,
 ) -> NDArray:
     r"""Compute Dykstra's algorithm for :math:`m=2`.
@@ -46,7 +46,7 @@ def dykstra_two(
     p = ncp.zeros_like(x)
     q = ncp.zeros_like(x)
 
-    for _ in range(max_iter):
+    for _ in range(niter):
         x_old = x.copy()
 
         y = step1(x + p)
@@ -65,7 +65,7 @@ def parallel_dykstra_projection(
     x0: NDArray,
     proj_ops: List[Proj],
     *,
-    max_iter: int,
+    niter: int,
     tol: float,
 ) -> NDArray:
     r"""Compute Dykstra's projection algorithm for :math:`m \ge 2`.
@@ -76,7 +76,7 @@ def parallel_dykstra_projection(
     m = len(proj_ops)
     z = [ncp.zeros_like(u) for _ in range(m)]
 
-    for _ in range(max_iter):
+    for _ in range(niter):
         u_old = u.copy()
         u_prev = ncp.array([u.copy() for _ in range(m)])
 
@@ -98,7 +98,7 @@ def parallel_dykstra_prox(
     *,
     weights: NDArray | List[float],
     taus: NDArray | List[float],
-    max_iter: int,
+    niter: int,
     tol: float,
 ) -> NDArray:
     r"""Compute Dykstra-like proximal algorithm for :math:`m \ge 2`.
@@ -111,7 +111,7 @@ def parallel_dykstra_prox(
     w = ncp.asarray(weights, dtype=float)
     w /= w.sum()
 
-    for _ in range(max_iter):
+    for _ in range(niter):
         x_old = x.copy()
         prox_z = ncp.stack([prox_ops[i](z[i], taus[i]) for i in range(m)])
         x = ncp.sum(w[:, None] * prox_z, axis=0)

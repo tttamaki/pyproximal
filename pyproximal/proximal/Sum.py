@@ -23,11 +23,11 @@ class Sum(ProxOperator):
         Weights :math:`\sum_{i=1}^m w_i = 1, \ 0 < w_i < 1`,
         used when :math:`m > 2`, or :math:`m = 2` and ``use_parallel=True``.
         Defaults to None, which means :math:`w_1 = \cdots = w_m = \frac{1}{m}.`
-    max_iter : :obj:`int`, optional, default=1000
+    niter : :obj:`int`, optional, default=1000
         The maximum number of iterations.
     tol : :obj:`float`, optional, default=1e-7
         Tolerance on change of the solution (used as stopping criterion).
-        If ``tol=0``, run until ``max_iter`` is reached.
+        If ``tol=0``, run until ``niter`` is reached.
     use_parallel : :obj:`bool`, optional, default=False
         The parallel version is used when :math:`m > 2`,
         or :math:`m = 2` and `use_parallel=True`.
@@ -113,7 +113,7 @@ class Sum(ProxOperator):
         self,
         ops: List[ProxOperator],
         weights: NDArray | List[float] | None = None,
-        max_iter: int = 1000,
+        niter: int = 1000,
         tol: float = 1e-7,
         use_parallel: bool = False,
         use_original_tau: bool = False,
@@ -121,7 +121,7 @@ class Sum(ProxOperator):
         super().__init__(None, False)
 
         self.ops = ops
-        self.max_iter = max_iter
+        self.niter = niter
         self.tol = tol
         self.use_original_tau = use_original_tau
 
@@ -208,7 +208,7 @@ class Sum(ProxOperator):
 
         return dykstra_two(
             x0, step1, step2,
-            max_iter=self.max_iter,
+            niter=self.niter,
             tol=self.tol,
         )
 
@@ -234,6 +234,6 @@ class Sum(ProxOperator):
             prox_ops=[op.prox for op in self.ops],
             weights=self.w,
             taus=tau_policy(tau, self.w),
-            max_iter=self.max_iter,
+            niter=self.niter,
             tol=self.tol,
         )

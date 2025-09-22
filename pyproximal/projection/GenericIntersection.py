@@ -16,11 +16,11 @@ class GenericIntersectionProj():
     ----------
     projections : :obj:`list`
         A list of projection functions :math:`P_1, \ldots, P_m`.
-    max_iter : :obj:`int`, optional, default=100
+    niter : :obj:`int`, optional, default=1000
         The maximum number of iterations.
     tol : :obj:`float`, optional, default=1e-6
         Tolerance on change of the solution (used as stopping criterion).
-        If ``tol=0``, run until ``max_iter`` is reached.
+        If ``tol=0``, run until ``niter`` is reached.
     use_parallel : :obj:`bool`, optional, default=False
         If True, use the parallel version when $m=2$.
 
@@ -100,13 +100,13 @@ class GenericIntersectionProj():
     def __init__(
         self,
         projections: List[Callable[[NDArray], NDArray]],
-        max_iter: int = 1000,
+        niter: int = 1000,
         tol: float = 1e-6,
         use_parallel: bool = False,
     ) -> None:
 
         self.projections = projections
-        self.max_iter = max_iter
+        self.niter = niter
         self.tol = tol
 
         self._proj = _select_impl_by_arity(
@@ -142,7 +142,7 @@ class GenericIntersectionProj():
 
         return dykstra_two(
             x0, step1, step2,
-            max_iter=self.max_iter,
+            niter=self.niter,
             tol=self.tol,
         )
 
@@ -157,6 +157,6 @@ class GenericIntersectionProj():
         return parallel_dykstra_projection(
             x0,
             proj_ops=self.projections,
-            max_iter=self.max_iter,
+            niter=self.niter,
             tol=self.tol,
         )

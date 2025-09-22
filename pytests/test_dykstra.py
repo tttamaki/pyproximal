@@ -71,7 +71,7 @@ def test_GenericIntersectionProx(par: Dict[str, Any]) -> None:
         # different torelance for float32 and float64
         tol = float(np.finfo(par['dtype']).resolution) * 10.  # pylint: disable=no-member
 
-        d = GenericIntersectionProx(proj, tol=tol, max_iter=1000)
+        d = GenericIntersectionProx(proj, tol=tol, niter=1000)
 
         # evaluation
         assert d(x) is False
@@ -84,7 +84,7 @@ def test_GenericIntersectionProx(par: Dict[str, Any]) -> None:
 
         if len(proj) == 2:
             d = GenericIntersectionProx(
-                proj, tol=tol, max_iter=1000, use_parallel=True)
+                proj, tol=tol, niter=1000, use_parallel=True)
 
             # evaluation
             assert d(x) is False

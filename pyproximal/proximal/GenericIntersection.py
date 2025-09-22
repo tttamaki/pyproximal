@@ -15,11 +15,11 @@ class GenericIntersectionProx(ProxOperator):
     ----------
     projections : :obj:`list`
         A list of projection functions :math:`P_1, \ldots, P_m`.
-    max_iter : :obj:`int`, optional, default=100
+    niter : :obj:`int`, optional, default=1000
         The maximum number of iterations.
     tol : :obj:`float`, optional, default=1e-6
         Tolerance on change of the solution (used as stopping criterion).
-        If ``tol=0``, run until ``max_iter`` is reached.
+        If ``tol=0``, run until ``niter`` is reached.
     use_parallel : :obj:`bool`, optional, default=False
         If True, use the parallel version when $m=2$.
 
@@ -39,7 +39,7 @@ class GenericIntersectionProx(ProxOperator):
     def __init__(
         self,
         projections: List[Callable[[NDArray], NDArray]],
-        max_iter: int = 100,
+        niter: int = 1000,
         tol: float = 1e-6,
         use_parallel: bool = False,
     ) -> None:
@@ -55,7 +55,7 @@ class GenericIntersectionProx(ProxOperator):
         self.genetic_intersection = \
             GenericIntersectionProj(
                 projections=self.projections,
-                max_iter=max_iter,
+                niter=niter,
                 tol=tol,
                 use_parallel=use_parallel,
             )
