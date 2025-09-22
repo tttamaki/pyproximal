@@ -15,7 +15,6 @@ class Sum(ProxOperator):
     r"""Proximal operator of a sum of two or more convex functions
     using Dykstra-like algorithm.
 
-
     Parameters
     ----------
     ops : :obj:`List[ProxOperator]`
@@ -46,7 +45,6 @@ class Sum(ProxOperator):
 
     using parallel Dykstra-like algorithm.
 
-
     For :math:`m=2`:
     The proximal mapping :math:`\prox_{\tau f + g}(\mathbf{x})` of
     :math:`\mathbf{x}` is computed by the Dykstra-like algorithm [1]_, [2]_:
@@ -58,7 +56,6 @@ class Sum(ProxOperator):
       * :math:`\mathbf{p}^{(k+1)} = \mathbf{p}^{(k)} + \mathbf{x}^{(k)} - \mathbf{y}^{(k)}`
       * :math:`\mathbf{x}^{(k+1)} = \prox_{\tau f}(\mathbf{y}^{(k)} + \mathbf{q}^{(k)})`
       * :math:`\mathbf{q}^{(k+1)} = \mathbf{q}^{(k)} + \mathbf{y}^{(k)} - \mathbf{x}^{(k+1)}`
-
 
     For :math:`m \ge 2`:
     The proximal mapping :math:`\prox_{\tau \sum_{i=1}^m w_i f_i}(\mathbf{x})`
@@ -73,32 +70,6 @@ class Sum(ProxOperator):
       * for :math:`i = 1, \ldots, m`
 
         * :math:`\mathbf{z}_{i}^{(k+1)} = \mathbf{z}_{i}^{(k)} + \mathbf{x}^{(k+1)} - \prox_{\tau f_i} (\mathbf{z}_{i}^{(k)})`
-
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> from pyproximal.proximal import L1, L2, Sum
-    >>> from pylops import MatrixMult
-    >>> rng = np.random.default_rng(10)
-
-    >>> A = MatrixMult(rng.normal(0., 1., size=(3, 5)))
-    >>> b = rng.normal(0., 1., size=3)
-    >>> sigma = rng.normal(0., 1.)
-    >>> l2_term = L2(A, b)
-    >>> l1_term = L1(sigma=sigma)
-
-    >>> # for computing prox of 1/2 * ||Ax - b||_2^2 + sigma ||x||_1
-    >>> dykstra = Sum([l2_term, l1_term])
-
-    >>> x = rng.normal(0., 5., size=5)
-    >>> tau = 1.0
-    >>> prox_x = dykstra.prox(x, tau)
-    >>> print("x      =", x)
-    x      = [ 2.12912834 -4.92677803 -5.56477065 -3.80313016  3.24012294]
-    >>> print("prox(x)=", prox_x)
-    prox(x)= [ 2.77581009 -1.37687093 -2.04246701 -1.81482749  1.54201139]
-
 
     References
     ----------
@@ -123,7 +94,6 @@ class Sum(ProxOperator):
         Maximal Monotone Operators. Journal of Convex Analysis 16, 727-748.
         Theorem 4.2.
         https://www.heldermann.de/JCA/JCA16/JCA163/jca16044.htm
-
 
     See also
     --------

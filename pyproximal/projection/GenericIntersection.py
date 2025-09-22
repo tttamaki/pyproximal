@@ -12,7 +12,6 @@ class GenericIntersectionProj():
     r"""The convex projection to the intersection of convex sets
     using Dykstra's algorithm.
 
-
     Parameters
     ----------
     projections : :obj:`List[Callable[[np.ndarray], np.ndarray]]`
@@ -23,7 +22,6 @@ class GenericIntersectionProj():
         Torrelance to stop the iteration.
     use_parallel : :obj:`bool`, optional, default=False
         If True, use the parallel version when $m=2$.
-
 
     Notes
     -----
@@ -36,7 +34,6 @@ class GenericIntersectionProj():
 
     is the intersection of :math:`C_i` provided :math:`C \neq \emptyset`.
 
-
     For :math:`m=2`, the projection :math:`P_C(x)` of :math:`x` is computed
     by the Dykstra's algorithm [1]_, [2]_, [3]_:
 
@@ -47,7 +44,6 @@ class GenericIntersectionProj():
       * :math:`p_{k+1} = x_k + p_k - y_k`
       * :math:`x_{k+1} = P_2(y_k + q_k)`
       * :math:`q_{k+1} = y_k + q_k - x_{k+1}`
-
 
     For :math:`m \ge 2`, the projection :math:`P_C(x)` is computed
     by the parallel Dykstra's algorithm [5]_, [6]_. The following
@@ -65,35 +61,6 @@ class GenericIntersectionProj():
     Note the this is the proximal operator of the corresponding
     indicator function
     (see :class:`pyproximal.GenericIntersectionProx` for details).
-
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> from pyproximal.projection import (
-    ...         BoxProj,
-    ...         EuclideanBallProj,
-    ...         GenericIntersectionProj
-    ... )
-
-    >>> circle_1 = EuclideanBallProj(np.array([-2.5, 0.0]), 5)
-    >>> circle_2 = EuclideanBallProj(np.array([2.5, 0.0]), 5)
-    >>> circle_3 = EuclideanBallProj(np.array([0.0, 3.5]), 5)
-    >>> box = BoxProj(np.array([-5.0, -2.5]), np.array([5.0, 2.5]))
-
-    >>> projections = [circle_1, circle_2, circle_3, box]
-    >>> dykstra_proj = GenericIntersectionProj(projections)
-
-    >>> rng = np.random.default_rng(10)
-    >>> x = rng.normal(0., 3.5, size=2)
-
-    >>> print("x            =", x)
-    x            = [-3.86168457 -2.53758624]
-
-    >>> xp = dykstra_proj(x)
-    >>> print("x projection =", xp)
-    x projection = [-2.42308423 -0.87363268]
-
 
     References
     ----------
@@ -119,7 +86,6 @@ class GenericIntersectionProj():
         projections: A convergence proof. Optimization 48, 409-427.
         https://doi.org/10.1080/02331930008844513
         https://people.orie.cornell.edu/aslewis/publications/00-dykstras.pdf
-
 
     See also
     --------
