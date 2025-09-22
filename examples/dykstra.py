@@ -39,7 +39,7 @@ xp = dykstra_proj(x)
 print("x projection =", xp)
 
 ###############################################################################
-# Here is the same example of a projection onto the intersection of convex sets
+# Here is another example of the same projection onto the intersection of convex sets
 # using :class:`pyproximal.GenericIntersectionProx`.
 
 import numpy as np
@@ -49,6 +49,7 @@ from pyproximal.projection import (
 )
 from pyproximal.proximal import GenericIntersectionProx
 
+# projection functions
 circle_1 = EuclideanBallProj(np.array([-2.5, 0.0]), 5)
 circle_2 = EuclideanBallProj(np.array([2.5, 0.0]), 5)
 circle_3 = EuclideanBallProj(np.array([0.0, 3.5]), 5)
@@ -66,14 +67,45 @@ print("Is x inside?", dykstra_prox(x))  # x is outside
 xp = dykstra_prox.prox(x, 1.0)
 
 print("x projection =", xp)
-print("Is x inside?", dykstra_prox(xp))  # xp is outside
+print("Is x inside?", dykstra_prox(xp))  # xp is inside
+
+###############################################################################
+# Yet another example of the same projection onto the intersection of convex sets
+# using :class:`pyproximal.Sum` via the sum of indicator functions of the projections.
+
+import numpy as np
+from pyproximal.proximal import (
+    Box,
+    EuclideanBall,
+    Sum,
+)
+
+# indicator functions
+circle_1 = EuclideanBall(np.array([-2.5, 0.0]), 5)
+circle_2 = EuclideanBall(np.array([2.5, 0.0]), 5)
+circle_3 = EuclideanBall(np.array([0.0, 3.5]), 5)
+box = Box(np.array([-5.0, -2.5]), np.array([5.0, 2.5]))
+
+projections = [circle_1, circle_2, circle_3, box]
+dykstra_sum = Sum(projections)  # sum of indicator functions
+
+rng = np.random.default_rng(10)
+x = rng.normal(0., 3.5, size=2)
+
+print("x            =", x)
+print("Is x inside?", dykstra_sum(x))  # x is outside
+
+xp = dykstra_sum.prox(x, 1.0)
+
+print("x projection =", xp)
+print("Is x inside?", dykstra_sum(xp))  # xp should be inside, but round-off error can leave it marginally infeasible.
 
 ###############################################################################
 # Here is an example of computing proximal operator of the sum of proximable functions
 # using :class:`pyproximal.Sum`.
 
 import numpy as np
-from pyproximal.proximal import L1, L2, Sum
+from pyproximal.proximal import L1, L2, Box, Sum
 from pylops import MatrixMult
 rng = np.random.default_rng(10)
 
@@ -82,9 +114,10 @@ b = rng.normal(0., 1., size=3)
 sigma = rng.normal(0., 1.)
 l2_term = L2(A, b)
 l1_term = L1(sigma=sigma)
+box = Box(rng.uniform(-5, -2.5, size=5), rng.uniform(2.5, 5, size=5))
 
-# for computing prox of 1/2 * ||Ax - b||_2^2 + sigma ||x||_1
-dykstra = Sum([l2_term, l1_term])
+# for computing prox of 1/2 * ||Ax - b||_2^2 + sigma ||x||_1 + I_box(x)
+dykstra = Sum([l2_term, l1_term, box])
 
 x = rng.normal(0., 5., size=5)
 tau = 1.0

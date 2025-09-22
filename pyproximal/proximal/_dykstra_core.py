@@ -70,7 +70,6 @@ def parallel_dykstra_projection(
 ) -> NDArray:
     r"""Compute Dykstra's projection algorithm for :math:`m \ge 2`.
     """
-    # ===== m>=2: 並列 projection コア（GenericIntersection 用） =====
     ncp = get_array_module(x0)
 
     u = x0.copy()
