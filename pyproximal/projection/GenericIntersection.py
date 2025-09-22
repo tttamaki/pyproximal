@@ -4,6 +4,7 @@ from pylops.utils.typing import NDArray
 from pyproximal.proximal._dykstra_core import (
     dykstra_two,
     parallel_dykstra_projection,
+    _select_impl_by_arity,
 )
 
 
@@ -141,32 +142,21 @@ class GenericIntersectionProj():
         self.max_iter = max_iter
         self.tol = tol
 
-        if not projections:
-            raise ValueError("len(projections) should be larger than zero.")
-        if len(projections) == 1:
-            self._proj = self._single_proj
-        elif len(projections) == 2 and not use_parallel:
-            self._proj = self._two_proj
-        self._proj = self._more_proj
+        self._proj = _select_impl_by_arity(
+            projections,
+            use_parallel=use_parallel,
+            single=self._single_proj,
+            two=self._two_proj,
+            more=self._more_proj,
+        )
 
     def __call__(self, x: NDArray) -> NDArray:
-        r"""compute projection :math:`P_C(x)` of :math:`x`.
-
-        Parameters
-        ----------
-        x : :obj:`np.ndarray`
-            A point
-
-        Returns
-        -------
-        :obj:`np.ndarray`
-            projection of x
-
+        r"""compute projection :math:`P_C(\mathbf{x})` of :math:`\mathbf{x}`.
         """
         return self._proj(x)
 
     def _single_proj(self, x0: NDArray) -> NDArray:
-        r"""Compute projection :math:`P_C(x)` for :math:`m=1`.
+        r"""Compute projection :math:`P_C(\mathbf{x})` for :math:`m=1`.
         """
         if len(self.projections) != 1:
             raise ValueError("len(projections) should be 1")
@@ -176,7 +166,7 @@ class GenericIntersectionProj():
     def _two_proj(
         self, x0: NDArray
     ) -> NDArray:
-        r"""Compute projection :math:`P_C(x)` for :math:`m=2`.
+        r"""Compute projection :math:`P_C(\mathbf{x})` for :math:`m=2`.
         """
         if len(self.projections) != 2:
             raise ValueError("len(projections) should be 2")

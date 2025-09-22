@@ -7,6 +7,7 @@ from pyproximal.ProxOperator import ProxOperator, _check_tau
 from pyproximal.proximal._dykstra_core import (
     dykstra_two,
     parallel_dykstra_prox,
+    _select_impl_by_arity,
 )
 
 
@@ -152,13 +153,13 @@ class Sum(ProxOperator):
         else:
             self.w = weights
 
-        if not ops:
-            raise ValueError("len(ops) should be larger than zero.")
-        if len(ops) == 1:
-            self._prox = self._single_prox
-        elif len(ops) == 2 and not use_parallel:
-            self._prox = self._two_prox
-        self._prox = self._more_prox
+        self._prox = _select_impl_by_arity(
+            ops,
+            use_parallel=use_parallel,
+            single=self._single_prox,
+            two=self._two_prox,
+            more=self._more_prox,
+        )
 
     def __call__(self, x: NDArray) -> bool | float:
         """Evaluate proximable functions
@@ -198,6 +199,8 @@ class Sum(ProxOperator):
 
     @_check_tau
     def prox(self, x: NDArray, tau: float, **kwargs: Any) -> NDArray:
+        r"""compute :math:`\prox_{\tau \ f}(\mathbf{x})`` of :math:`\mathbf{x}`.
+        """
         return self._prox(x, tau)
 
     def _single_prox(
@@ -235,7 +238,8 @@ class Sum(ProxOperator):
     def _more_prox(
         self, x0: NDArray, tau: float
     ) -> NDArray:
-        r"""Compute :math:`\prox_{\tau \ \sum_{i=1}^m w_i f_i}` for :math:`m \ge 2`.
+        r"""Compute :math:`\prox_{\tau \ \sum_{i=1}^m w_i f_i}(\mathbf{x})`
+        for :math:`m \ge 2`.
         """
 
         def tau_policy(tau: float, w: NDArray | List[float]) -> List[float]:

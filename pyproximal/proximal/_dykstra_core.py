@@ -1,14 +1,39 @@
-# pyproximal/_dykstra_core.py
-from typing import Callable, List
+from typing import Callable, List, Any, Sequence, TypeVar
 
 from pylops.utils.typing import NDArray
 from pylops.utils.backend import get_array_module
 
+Proj = TypeVar("Proj", bound=Callable[[NDArray], NDArray])
+ProxOp = TypeVar("ProxOp", bound=Callable[[NDArray, float], NDArray])
+ProxOpOrProj = TypeVar(
+    "ProxOpOrProj",
+    Callable[[NDArray], NDArray],
+    Callable[[NDArray, float], NDArray]
+)
+
+
+def _select_impl_by_arity(
+    items: Sequence[Any],
+    *,
+    use_parallel: bool,
+    single: ProxOpOrProj,
+    two: ProxOpOrProj,
+    more: ProxOpOrProj,
+) -> ProxOpOrProj:
+    """Choose implementation by ``len(items)`@ and ``use_parallel``."""
+    if not items:
+        raise ValueError("items must not be empty")
+    if len(items) == 1:
+        return single
+    if len(items) == 2 and not use_parallel:
+        return two
+    return more
+
 
 def dykstra_two(
     x0: NDArray,
-    step1: Callable[[NDArray], NDArray],
-    step2: Callable[[NDArray], NDArray],
+    step1: Proj,
+    step2: Proj,
     *,
     max_iter: int,
     tol: float,
@@ -38,7 +63,7 @@ def dykstra_two(
 
 def parallel_dykstra_projection(
     x0: NDArray,
-    proj_ops: List[Callable[[NDArray], NDArray]],
+    proj_ops: List[Proj],
     *,
     max_iter: int,
     tol: float,
@@ -70,7 +95,7 @@ def parallel_dykstra_projection(
 
 def parallel_dykstra_prox(
     x0: NDArray,
-    prox_ops: List[Callable[[NDArray, float], NDArray]],
+    prox_ops: List[ProxOp],
     *,
     weights: NDArray | List[float],
     taus: NDArray | List[float],
@@ -89,7 +114,7 @@ def parallel_dykstra_prox(
 
     for _ in range(max_iter):
         x_old = x.copy()
-        prox_z = ncp.stack([prox_ops[i](z[i], float(taus[i])) for i in range(m)])
+        prox_z = ncp.stack([prox_ops[i](z[i], taus[i]) for i in range(m)])
         x = ncp.sum(w[:, None] * prox_z, axis=0)
         z = z + x - prox_z
 
