@@ -26,7 +26,7 @@ class GenericIntersectionProx(ProxOperator):
     -----
     As the intersection of convex sets is an indicator function,
     the proximal operator corresponds to its convex projection
-    (see :class:`pyproximal.projection.DykstrasProjection` for details).
+    (see :class:`pyproximal.projection.GenericIntersectionProj` for details).
 
 
     Examples
@@ -36,7 +36,7 @@ class GenericIntersectionProx(ProxOperator):
     ...         BoxProj,
     ...         EuclideanBallProj,
     ... )
-    >>> from pyproximal.proximal import DykstrasProjectionProx
+    >>> from pyproximal.proximal import GenericIntersectionProx
 
     >>> circle_1 = EuclideanBallProj(np.array([-2.5, 0.0]), 5)
     >>> circle_2 = EuclideanBallProj(np.array([2.5, 0.0]), 5)
@@ -44,7 +44,7 @@ class GenericIntersectionProx(ProxOperator):
     >>> box = BoxProj(np.array([-5.0, -2.5]), np.array([5.0, 2.5]))
 
     >>> projections = [circle_1, circle_2, circle_3, box]
-    >>> dykstra_prox = DykstrasProjectionProx(projections)
+    >>> dykstra_prox = GenericIntersectionProx(projections)
 
     >>> rng = np.random.default_rng(10)
     >>> x = rng.normal(0., 3.5, size=2)
@@ -54,7 +54,7 @@ class GenericIntersectionProx(ProxOperator):
     >>> dykstra_prox(x)  # x is outside
     False
 
-    >>> xp = dykstra_prox.prox(x, 1.0)  # DykstrasProjection
+    >>> xp = dykstra_prox.prox(x, 1.0)  # GenericIntersection
     >>> print("x projection =", xp)
     x projection = [-2.42308423 -0.87363268]
     >>> dykstra_prox(xp)  # x is inside
@@ -63,7 +63,7 @@ class GenericIntersectionProx(ProxOperator):
 
     See also
     --------
-    pyproximal.projection.DykstrasProjection :
+    pyproximal.projection.GenericIntersectionProj :
         The corresponding convex projection.
 
     """
@@ -84,7 +84,7 @@ class GenericIntersectionProx(ProxOperator):
         # will hold even after the convergence of Dykstra's algorithm.
         self.tol = tol * 10
 
-        self.dykstras_projection = \
+        self.genetic_intersection = \
             GenericIntersectionProj(
                 projections=self.projections,
                 max_iter=max_iter,
@@ -98,4 +98,4 @@ class GenericIntersectionProx(ProxOperator):
 
     @_check_tau
     def prox(self, x: NDArray, tau: float, **kwargs: Any) -> NDArray:
-        return self.dykstras_projection(x)
+        return self.genetic_intersection(x)

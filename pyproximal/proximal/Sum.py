@@ -1,9 +1,13 @@
-from typing import List, Any
+from typing import List, Any, Callable
 
 from pylops.utils.typing import NDArray
 from pylops.utils.backend import get_array_module
 
 from pyproximal.ProxOperator import ProxOperator, _check_tau
+from pyproximal.proximal._dykstra_core import (
+    dykstra_two,
+    parallel_dykstra_prox,
+)
 
 
 class Sum(ProxOperator):
@@ -73,7 +77,7 @@ class Sum(ProxOperator):
     Examples
     --------
     >>> import numpy as np
-    >>> from pyproximal.proximal import L1, L2, DykstraLikeProximal
+    >>> from pyproximal.proximal import L1, L2, Sum
     >>> from pylops import MatrixMult
     >>> rng = np.random.default_rng(10)
 
@@ -84,7 +88,7 @@ class Sum(ProxOperator):
     >>> l1_term = L1(sigma=sigma)
 
     >>> # for computing prox of 1/2 * ||Ax - b||_2^2 + sigma ||x||_1
-    >>> dykstra = DykstraLikeProximal([l2_term, l1_term])
+    >>> dykstra = Sum([l2_term, l1_term])
 
     >>> x = rng.normal(0., 5., size=5)
     >>> tau = 1.0
@@ -122,7 +126,7 @@ class Sum(ProxOperator):
 
     See also
     --------
-    projection.DykstrasProjection :
+    projection.GenericIntersectionProj :
         The convex projection to the intersection of convex sets
         using Dykstra's algorithm.
     """
@@ -137,25 +141,27 @@ class Sum(ProxOperator):
         use_original_tau: bool = False,
     ) -> None:
         super().__init__(None, False)
-        assert len(ops) > 0
+
         self.ops = ops
         self.max_iter = max_iter
+        self.tol = tol
+        self.use_original_tau = use_original_tau
+
         if weights is None:
             self.w = [1. / len(self.ops)] * len(self.ops)
         else:
             self.w = weights
-        self.tol = tol
-        self.use_original_tau = use_original_tau
 
+        if not ops:
+            raise ValueError("len(ops) should be larger than zero.")
         if len(ops) == 1:
             self._prox = self._single_prox
         elif len(ops) == 2 and not use_parallel:
-            self._prox = self._dykstra_like_proximal_algorithm
-        else:
-            self._prox = self._parallel_dykstra_like_proximal_algorithm
+            self._prox = self._two_prox
+        self._prox = self._more_prox
 
     def __call__(self, x: NDArray) -> bool | float:
-        """Proximable function
+        """Evaluate proximable functions
 
         Parameters
         ----------
@@ -165,9 +171,9 @@ class Sum(ProxOperator):
         Returns
         -------
         :obj:`bool` or  :obj:`float`
-            - return False immediately if any boolean ops is False
-            - return the sum of numeric ops values if all boolean ops are True
-            - return True if ops are all boolean (no numeric ops) and True
+            - return ``False`` immediately if any boolean-type ops is ``False``
+            - return the sum of numeric-type ops values if all boolean-type ops are ``True``
+            - return ``True`` if all ops are boolean-type (no numeric-type ops) and ``True``
         """
         # logic inspired by https://github.com/PyLops/pyproximal/issues/116
         ncp = get_array_module(x)
@@ -198,100 +204,55 @@ class Sum(ProxOperator):
         self, x0: NDArray, tau: float
     ) -> NDArray:
         r"""Compute :math:`\prox_{\tau \ f}(\mathbf{x})` for :math:`m = 1`.
-
-        Parameters
-        ----------
-        x : :obj:`np.ndarray`
-            Vector
-        tau : :obj:`float`
-            Positive scalar weight
-
-        Returns
-        -------
-        :obj:`np.ndarray`
-            prox of x
         """
+        if len(self.ops) != 1:
+            raise ValueError("len(ops) should be 1")
+
         return self.ops[0].prox(x0, tau)
 
-    def _dykstra_like_proximal_algorithm(
+    def _two_prox(
         self, x0: NDArray, tau: float
     ) -> NDArray:
         r"""Compute :math:`\prox_{\tau \ f + g}(\mathbf{x})` for :math:`m = 2`.
-
-        Parameters
-        ----------
-        x : :obj:`np.ndarray`
-            Vector
-        tau : :obj:`float`
-            Positive scalar weight
-
-        Returns
-        -------
-        :obj:`np.ndarray`
-            prox of x
         """
-        ncp = get_array_module(x0)
+        if len(self.ops) != 2:
+            raise ValueError("len(ops) should be 2")
 
-        x = x0.copy()
-        p = ncp.zeros_like(x)
-        q = ncp.zeros_like(x)
+        def bind_tau(
+                prox: Callable[[NDArray, float], NDArray],
+                tau: float,
+        ) -> Callable[[NDArray], NDArray]:
+            return lambda x: prox(x, tau)
 
-        for _ in range(self.max_iter):
-            x_old = x.copy()
+        step1, step2 = [bind_tau(op.prox, tau) for op in self.ops]
 
-            y = self.ops[0].prox(x + p, tau)
-            p = p + x - y
-            x = self.ops[1].prox(y + q, tau)
-            q = q + y - x
+        return dykstra_two(
+            x0, step1, step2,
+            max_iter=self.max_iter,
+            tol=self.tol,
+        )
 
-            if ncp.abs(x - x_old).max() < self.tol:
-                break
-
-        return x
-
-    def _parallel_dykstra_like_proximal_algorithm(
+    def _more_prox(
         self, x0: NDArray, tau: float
     ) -> NDArray:
         r"""Compute :math:`\prox_{\tau \ \sum_{i=1}^m w_i f_i}` for :math:`m \ge 2`.
-
-        Parameters
-        ----------
-        x : :obj:`np.ndarray`
-            Vector
-        tau : :obj:`float`
-            Positive scalar weight
-
-        Returns
-        -------
-        :obj:`np.ndarray`
-            prox of x
         """
-        ncp = get_array_module(x0)
 
-        x = x0.copy()
-        m = len(self.ops)
-        z = ncp.stack([x0.copy() for _ in range(m)])
-        w = ncp.asarray(self.w)
-        w /= w.sum()
+        def tau_policy(tau: float, w: NDArray | List[float]) -> List[float]:
+            if self.use_original_tau:
+                # legacy: all prox_i use the same tau
+                return [tau] * len(w)
+            # PPXA-like scaling: tau_i = T / w_i
+            return [tau / wi for wi in w]
 
-        # NOTE:
-        # - taus = [tau] * m  (not default)
-        #   - This is in the literature [3,4,5], but doesn't pass the tests.
-        # - taus = [tau / self.w[i] for i in range(m)]  (default)
-        #   - This one passes the tests, but is not shown in the literature,
-        #     inspired by the proof of Parallel Proximal Algorithm (PPXA).
-        taus = ncp.full(m, tau) if self.use_original_tau else tau / w
+        if len(self.ops) < 2:
+            raise ValueError("len(ops) should be 2 or larger")
 
-        for _ in range(self.max_iter):
-            x_old = x.copy()
-
-            prox_z = ncp.stack([self.ops[i].prox(z[i], taus[i]) for i in range(m)])
-
-            x = ncp.sum(w[:, None] * prox_z, axis=0)
-
-            z = z + x - prox_z
-
-            if ncp.abs(x - x_old).max() < self.tol:
-                break
-
-        return x
+        return parallel_dykstra_prox(
+            x0,
+            prox_ops=[op.prox for op in self.ops],
+            weights=self.w,
+            taus=tau_policy(tau, self.w),
+            max_iter=self.max_iter,
+            tol=self.tol,
+        )

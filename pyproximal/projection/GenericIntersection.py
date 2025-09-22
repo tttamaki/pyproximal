@@ -1,6 +1,10 @@
 from typing import List, Callable
 from pylops.utils.typing import NDArray
-from pylops.utils.backend import get_array_module
+
+from pyproximal.proximal._dykstra_core import (
+    dykstra_two,
+    parallel_dykstra_projection,
+)
 
 
 class GenericIntersectionProj():
@@ -59,7 +63,7 @@ class GenericIntersectionProj():
 
     Note the this is the proximal operator of the corresponding
     indicator function
-    (see :class:`pyproximal.DykstrasProjectionProx` for details).
+    (see :class:`pyproximal.GenericIntersectionProx` for details).
 
 
     Examples
@@ -68,7 +72,7 @@ class GenericIntersectionProj():
     >>> from pyproximal.projection import (
     ...         BoxProj,
     ...         EuclideanBallProj,
-    ...         DykstrasProjection
+    ...         GenericIntersectionProj
     ... )
 
     >>> circle_1 = EuclideanBallProj(np.array([-2.5, 0.0]), 5)
@@ -77,7 +81,7 @@ class GenericIntersectionProj():
     >>> box = BoxProj(np.array([-5.0, -2.5]), np.array([5.0, 2.5]))
 
     >>> projections = [circle_1, circle_2, circle_3, box]
-    >>> dykstra_proj = DykstrasProjection(projections)
+    >>> dykstra_proj = GenericIntersectionProj(projections)
 
     >>> rng = np.random.default_rng(10)
     >>> x = rng.normal(0., 3.5, size=2)
@@ -118,9 +122,9 @@ class GenericIntersectionProj():
 
     See also
     --------
-    pyproximal.DykstrasProjectionProx :
+    pyproximal.GenericIntersectionProx :
         The corresponding indicator function.
-    pyproximal.DykstraLikeProximal :
+    pyproximal.Sum :
         Proximal operator of a sum of two or more convex functions
         using Dykstra-like algorithm.
     """
@@ -128,21 +132,22 @@ class GenericIntersectionProj():
     def __init__(
         self,
         projections: List[Callable[[NDArray], NDArray]],
-        max_iter: int = 100,
+        max_iter: int = 1000,
         tol: float = 1e-6,
         use_parallel: bool = False,
     ) -> None:
+
         self.projections = projections
         self.max_iter = max_iter
         self.tol = tol
-        self.use_parallel = use_parallel
 
+        if not projections:
+            raise ValueError("len(projections) should be larger than zero.")
         if len(projections) == 1:
-            self._projection = self._single_projection
+            self._proj = self._single_proj
         elif len(projections) == 2 and not use_parallel:
-            self._projection = self._dykstra_projection
-        else:
-            self._projection = self._parallel_dykstra_projection
+            self._proj = self._two_proj
+        self._proj = self._more_proj
 
     def __call__(self, x: NDArray) -> NDArray:
         r"""compute projection :math:`P_C(x)` of :math:`x`.
@@ -158,88 +163,43 @@ class GenericIntersectionProj():
             projection of x
 
         """
-        return self._projection(x)
+        return self._proj(x)
 
-    def _single_projection(self, x0: NDArray) -> NDArray:
+    def _single_proj(self, x0: NDArray) -> NDArray:
         r"""Compute projection :math:`P_C(x)` for :math:`m=1`.
-
-        Parameters
-        ----------
-        x : :obj:`np.ndarray`
-            A point
-
-        Returns
-        -------
-        :obj:`np.ndarray`
-            projection of x
-
         """
+        if len(self.projections) != 1:
+            raise ValueError("len(projections) should be 1")
+
         return self.projections[0](x0)
 
-    def _dykstra_projection(self, x0: NDArray) -> NDArray:
+    def _two_proj(
+        self, x0: NDArray
+    ) -> NDArray:
         r"""Compute projection :math:`P_C(x)` for :math:`m=2`.
-
-        Parameters
-        ----------
-        x : :obj:`np.ndarray`
-            A point
-
-        Returns
-        -------
-        :obj:`np.ndarray`
-            projection of x
-
         """
-        ncp = get_array_module(x0)
+        if len(self.projections) != 2:
+            raise ValueError("len(projections) should be 2")
 
-        x = x0.copy()
-        p = ncp.zeros_like(x)
-        q = ncp.zeros_like(x)
+        step1, step2 = self.projections
 
-        for _ in range(self.max_iter):
-            x_old = x.copy()
+        return dykstra_two(
+            x0, step1, step2,
+            max_iter=self.max_iter,
+            tol=self.tol,
+        )
 
-            y = self.projections[0](x + p)
-            p = x + p - y
-            x = self.projections[1](y + q)
-            q = y + q - x
-
-            if max(ncp.abs(x - x_old).max(),
-                   ncp.abs(y - x_old).max()) < self.tol:
-                break
-        return x
-
-    def _parallel_dykstra_projection(self, x0: NDArray) -> NDArray:
+    def _more_proj(
+            self, x0: NDArray
+    ) -> NDArray:
         r"""Compute projection :math:`P_C(x)` for :math:`m \ge 2`.
-
-        Parameters
-        ----------
-        x : :obj:`np.ndarray`
-            A point
-
-        Returns
-        -------
-        :obj:`np.ndarray`
-            projection of x
-
         """
-        ncp = get_array_module(x0)
+        if len(self.projections) < 2:
+            raise ValueError("len(projections) should be 2 or larger")
 
-        u = x0.copy()
-        m = len(self.projections)
-        z = [ncp.zeros_like(u) for _ in range(m)]
-
-        for _ in range(self.max_iter):
-            u_old = u.copy()
-            u_prev = ncp.array([u.copy() for _ in range(m)])
-
-            for i in range(m):
-                u = self.projections[i](u_prev[i - 1] + z[i])
-                z[i] = z[i] + u_prev[i - 1] - u
-                u_prev[i] = u
-
-            if max(ncp.abs(u_old - u).max(),
-                   ncp.abs(u_prev - u).max()) < self.tol:
-                break
-
-        return u
+        return parallel_dykstra_projection(
+            x0,
+            proj_ops=self.projections,
+            max_iter=self.max_iter,
+            tol=self.tol,
+        )
