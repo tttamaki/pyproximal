@@ -26,37 +26,37 @@ class GenericIntersectionProj():
     Notes
     -----
     Given a set of convex projections :math:`P_i` for :math:`i=1, \ldots, m`,
-    each mapping :math:`x` to its projection :math:`P_i(x)` onto a convex set
-    :math:`C_i`, this class computes the convex projection :math:`P_C(x)`
-    of :math:`x` using Dykstra's algorithm, where
+    each mapping :math:`\mathbf{x}` to its projection :math:`P_i(\mathbf{x})` onto a convex set
+    :math:`C_i`, this class computes the convex projection :math:`P_C(\mathbf{x})`
+    of :math:`\mathbf{x}` using Dykstra's algorithm, where
 
     .. math:: C = \cap_{i=1}^m C_i
 
     is the intersection of :math:`C_i` provided :math:`C \neq \emptyset`.
 
-    For :math:`m=2`, the projection :math:`P_C(x)` of :math:`x` is computed
+    For :math:`m=2`, the projection :math:`P_C(\mathbf{x})` of :math:`\mathbf{x}` is computed
     by the Dykstra's algorithm [1]_, [2]_, [3]_:
 
-    * :math:`x_0 = x, p_0 = q_0 = 0`,
+    * :math:`\mathbf{x}_0 = \mathbf{x}, \mathbf{p}_0 = \mathbf{q}_0 = 0`,
     * for :math:`k = 1, 2, \ldots`
 
-      * :math:`y_k = P_1(x_k + p_k)`
-      * :math:`p_{k+1} = x_k + p_k - y_k`
-      * :math:`x_{k+1} = P_2(y_k + q_k)`
-      * :math:`q_{k+1} = y_k + q_k - x_{k+1}`
+      * :math:`y_k = P_1(\mathbf{x}_k + \mathbf{p}_k)`
+      * :math:`\mathbf{p}_{k+1} = \mathbf{x}_k + \mathbf{p}_k - y_k`
+      * :math:`\mathbf{x}_{k+1} = P_2(y_k + \mathbf{q}_k)`
+      * :math:`\mathbf{q}_{k+1} = y_k + \mathbf{q}_k - \mathbf{x}_{k+1}`
 
-    For :math:`m \ge 2`, the projection :math:`P_C(x)` is computed
+    For :math:`m \ge 2`, the projection :math:`P_C(\mathbf{x})` is computed
     by the parallel Dykstra's algorithm [5]_, [6]_. The following
     is taken from [4]_:
 
-    * :math:`u_m^{(0)} = x, z_1^{(0)} = \cdots = z_m^{(0)} = 0`,
+    * :math:`\mathbf{u}_m^{(0)} = \mathbf{x}, \mathbf{z}_1^{(0)} = \cdots = \mathbf{z}_m^{(0)} = 0`,
     * for :math:`k = 1, 2, \ldots`
 
-      * :math:`u_0^{(k)} = u_m^{(k-1)}`
+      * :math:`\mathbf{u}_0^{(k)} = \mathbf{u}_m^{(k-1)}`
       * for :math:`i = 1, \ldots, m`
 
-        * :math:`u_i^{(k)} = P_i(u_{i-1}^{(k)} + z_i^{(k-1)})`
-        * :math:`z_i^{(k)} = z_i^{(k-1)} + u_{i-1}^{(k)} - u_i^{(k)}`
+        * :math:`\mathbf{u}_i^{(k)} = P_i(\mathbf{u}_{i-1}^{(k)} + \mathbf{z}_i^{(k-1)})`
+        * :math:`\mathbf{z}_i^{(k)} = \mathbf{z}_i^{(k-1)} + \mathbf{u}_{i-1}^{(k)} - \mathbf{u}_i^{(k)}`
 
     Note the this is the proximal operator of the corresponding
     indicator function
