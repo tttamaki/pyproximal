@@ -39,6 +39,50 @@ xp = dykstra_proj(x)
 print("x projection =", xp)
 
 ###############################################################################
+# Let's see how x is projected to xp.
+
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.patches import Circle, Rectangle
+from matplotlib.colors import to_rgba
+
+fig, ax = plt.subplots(figsize=(6, 6))
+
+circles = [
+    ((-2.5, 0.0), 5.0),
+    ((2.5, 0.0), 5.0),
+    ((0.0, 3.5), 5.0),
+]
+for (cx, cy), r in circles:
+    ax.add_patch(Circle(
+        (cx, cy), r,
+        facecolor=to_rgba('C0', 0.06),
+        edgecolor='k', linewidth=0.5, linestyle='-'
+    ))
+
+xmin, ymin = (-5.0, -2.5)
+xmax, ymax = (5.0, 2.5)
+ax.add_patch(Rectangle(
+    (xmin, ymin), xmax - xmin, ymax - ymin,
+    facecolor=to_rgba('C1', 0.06),
+    edgecolor='k', linewidth=0.5, linestyle='-',
+))
+
+ax.scatter(*x, marker='o', s=40, color='k', label="x")
+ax.scatter(*xp, marker='o', s=40, color='red', label="xp")
+ax.annotate('', xy=xp, xytext=x, arrowprops=dict(arrowstyle='->', color='k'))
+
+ax.set_aspect('equal', adjustable='box')
+ax.set_xlim(-10, 10)
+ax.set_ylim(-10, 10)
+ax.set_xlabel('x₁')
+ax.set_ylabel('x₂')
+ax.grid(alpha=0.2)
+ax.legend()
+
+plt.show()
+
+###############################################################################
 # Here is another example of the same projection onto the intersection of convex sets
 # using :class:`pyproximal.GenericIntersectionProx`.
 
