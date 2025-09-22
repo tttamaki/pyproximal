@@ -19,20 +19,19 @@ class GenericIntersectionProj():
     max_iter : :obj:`int`, optional, default=100
         The maximum number of iterations.
     tol : :obj:`float`, optional, default=1e-6
-        Torrelance to stop the iteration.
+        Tolerance on change of the solution (used as stopping criterion).
+        If ``tol=0``, run until ``niter`` is reached.
     use_parallel : :obj:`bool`, optional, default=False
         If True, use the parallel version when $m=2$.
 
     Notes
     -----
-    Given a set of convex projections :math:`P_i` for :math:`i=1, \ldots, m`,
-    each mapping :math:`\mathbf{x}` to its projection :math:`P_i(\mathbf{x})` onto a convex set
-    :math:`C_i`, this class computes the convex projection :math:`P_C(\mathbf{x})`
-    of :math:`\mathbf{x}` using Dykstra's algorithm, where
-
-    .. math:: C = \cap_{i=1}^m C_i
-
-    is the intersection of :math:`C_i` provided :math:`C \neq \emptyset`.
+    Given a collection of convex projections :math:`P_i` for :math:`i = 1, \ldots, m`,
+    where each projection :math:`P_i(\mathbf{x})` maps a point :math:`\mathbf{x}`
+    onto the convex set :math:`C_i`, the overall projection :math:`P_C(\mathbf{x})`
+    of :math:`\mathbf{x}` onto the intersection of such sets
+    :math:`C = \cap_{i=1}^m C_i` is computed using Dykstra's algorithm.
+    (:math:`C` should not be empty.)
 
     For :math:`m=2`, the projection :math:`P_C(\mathbf{x})` of :math:`\mathbf{x}` is computed
     by the Dykstra's algorithm [1]_, [2]_, [3]_:
@@ -89,6 +88,8 @@ class GenericIntersectionProj():
 
     See also
     --------
+    pyproximal.projection.IntersectionProj :
+        The convex projection onto the intersection of a particular type of convex sets.
     pyproximal.GenericIntersectionProx :
         The corresponding indicator function.
     pyproximal.Sum :
