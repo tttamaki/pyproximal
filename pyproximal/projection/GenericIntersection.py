@@ -30,7 +30,7 @@ class GenericIntersectionProj():
     where each projection :math:`P_i(\mathbf{x})` maps a point :math:`\mathbf{x}`
     onto the convex set :math:`C_i`, the overall projection :math:`P_C(\mathbf{x})`
     of :math:`\mathbf{x}` onto the intersection of such sets
-    :math:`C = \cap_{i=1}^m C_i` is computed using Dykstra's algorithm.
+    :math:`C = \cap_{i=1}^m C_i` is computed using the Dykstra's algorithm.
     (:math:`C` should not be empty.)
 
     For :math:`m=2`, the projection :math:`P_C(\mathbf{x})` of :math:`\mathbf{x}` is computed

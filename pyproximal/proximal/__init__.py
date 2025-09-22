@@ -42,7 +42,7 @@ The subpackage proximal contains a number of proximal operators:
     QuadraticEnvelopeRankL2         The quadratic envelope of the rank function with an L2 misfit term
     HalfSpace                       Half space indicator
     GenericIntersectionProx         indicator of projection onto a union of given sets
-    Sum                             The sum of proximal operators
+    Sum                             Proximal operator of the sum of proximable functions
 """
 
 from .Box import *

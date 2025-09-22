@@ -12,7 +12,7 @@ from pyproximal.proximal._dykstra_core import (
 
 
 class Sum(ProxOperator):
-    r"""Proximal operator of a sum of two or more convex functions
+    r"""Proximal operator of the sum of proximable functions
     using Dykstra-like algorithm.
 
     Parameters
@@ -43,11 +43,11 @@ class Sum(ProxOperator):
 
     .. math:: \prox_{\tau \ f + g}
 
-    using Dykstra-like algorithm, or of the weighted sum of functions
+    using the Dykstra-like algorithm, or of the weighted sum of functions
 
     .. math:: \prox_{\tau \ \sum_{i=1}^m w_i f_i}
 
-    using parallel Dykstra-like algorithm.
+    using the parallel Dykstra-like algorithm.
 
     For :math:`m=2`:
     The proximal mapping :math:`\prox_{\tau f + g}(\mathbf{x})` of
