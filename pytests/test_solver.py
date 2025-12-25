@@ -231,7 +231,7 @@ def test_ADMM_DRS(par):
 
 
 @pytest.mark.parametrize("par", [(par1), (par2)])
-def test_ppxa_with_admm(par: Dict[str, Any]) -> None:
+def test_PPXA_with_ADMM(par: Dict[str, Any]) -> None:
     """Check equivalency of PPXA and ADMM
     when using a single regularization term
     """
@@ -266,7 +266,52 @@ def test_ppxa_with_admm(par: Dict[str, Any]) -> None:
 
 
 @pytest.mark.parametrize("par", [(par1), (par2)])
-def test_consensus_admm_with_admm(par: Dict[str, Any]) -> None:
+def test_PPXA_with_GPG(par: Dict[str, Any]) -> None:
+    """Check equivalency of PPXA and GeneralizedProximalGradient
+    """
+    for seed in range(10):
+        rng = np.random.default_rng(seed)
+
+        n, m = par["n"], par["m"]
+
+        # Define sparse model
+        x = np.zeros(m)
+        x[2], x[4] = 1, 0.5
+
+        g = np.zeros_like(x)
+        g[1], g[2] = 1, 0.5
+
+        # Random mixing matrices
+        R1 = rng.normal(0.0, 1.0, (n, m))
+        Rop1 = MatrixMult(R1)
+        y1 = Rop1 @ x
+
+        R2 = rng.normal(0.0, 1.0, (n, m))
+        Rop2 = MatrixMult(R2)
+        y2 = Rop2 @ x
+
+        l2_1 = L2(Op=Rop1, b=y1, niter=50, warm=False)
+        l2_2 = L2(Op=Rop2, b=y2, niter=50, warm=False)
+        l1_1 = L1(sigma=5e-1)
+        l1_2 = L1(sigma=2.5e-1, g=g)
+
+        # Step size
+        L = (Rop1.H * Rop1).eigs(1).real.item()
+        tau = 0.5 / L
+
+        xgpg = GeneralizedProximalGradient(
+            [l2_1, l2_2],
+            [l1_1, l1_2],
+            x0=np.zeros(m), tau=tau, niter=150, show=True)
+        xppxa = PPXA(
+            [l2_1, l2_2, l1_1, l1_2],
+            x0=np.zeros(m), tau=tau, niter=15000, show=True, tol=1e-7)
+
+        assert_array_almost_equal(xgpg, xppxa, decimal=2, err_msg=f"seed={seed}")
+
+
+@pytest.mark.parametrize("par", [(par1), (par2)])
+def test_ConcensusADMM_with_ADMM(par: Dict[str, Any]) -> None:
     """Check equivalency of ConcensusADMM and ADMM
     when two proximable functions
     """
@@ -301,7 +346,7 @@ def test_consensus_admm_with_admm(par: Dict[str, Any]) -> None:
 
 
 @pytest.mark.parametrize("par", [(par1), (par2)])
-def test_consensus_admm_equals_lasso(par: Dict[str, Any]) -> None:
+def test_ConcensusADMM_with_ADMM_for_Lasso(par: Dict[str, Any]) -> None:
     """Check equivalency of ConcensusADMM and ADMM
     when more than two proximable functions for lasso
     """
@@ -362,3 +407,48 @@ def test_consensus_admm_equals_lasso(par: Dict[str, Any]) -> None:
         assert_array_almost_equal(
             x_cons, x_lasso, decimal=2, err_msg=f"seed={seed}"
         )
+
+
+@pytest.mark.parametrize("par", [(par1), (par2)])
+def test_ConcensusADMM_with_GPG(par: Dict[str, Any]) -> None:
+    """Check equivalency of ConcensusADMM and GeneralizedProximalGradient
+    """
+    for seed in range(10):
+        rng = np.random.default_rng(seed)
+
+        n, m = par["n"], par["m"]
+
+        # Define sparse model
+        x = np.zeros(m)
+        x[2], x[4] = 1, 0.5
+
+        g = np.zeros_like(x)
+        g[1], g[2] = 1, 0.5
+
+        # Random mixing matrices
+        R1 = rng.normal(0.0, 1.0, (n, m))
+        Rop1 = MatrixMult(R1)
+        y1 = Rop1 @ x
+
+        R2 = rng.normal(0.0, 1.0, (n, m))
+        Rop2 = MatrixMult(R2)
+        y2 = Rop2 @ x
+
+        l2_1 = L2(Op=Rop1, b=y1, niter=50, warm=False)
+        l2_2 = L2(Op=Rop2, b=y2, niter=50, warm=False)
+        l1_1 = L1(sigma=5e-1)
+        l1_2 = L1(sigma=2.5e-1, g=g)
+
+        # Step size
+        L = (Rop1.H * Rop1).eigs(1).real.item()
+        tau = 0.5 / L
+
+        xgpg = GeneralizedProximalGradient(
+            [l2_1, l2_2],
+            [l1_1, l1_2],
+            x0=np.zeros(m), tau=tau, niter=150, show=True)
+        xppxa = ConcensusADMM(
+            [l2_1, l2_2, l1_1, l1_2],
+            x0=np.zeros(m), tau=tau, niter=15000, show=True, tol=1e-7)
+
+        assert_array_almost_equal(xgpg, xppxa, decimal=2, err_msg=f"seed={seed}")
