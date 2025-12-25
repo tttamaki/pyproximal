@@ -1806,58 +1806,57 @@ def PPXA(  # pylint: disable=invalid-name
     callback: Optional[Callable[..., None]] = None,
     show: bool = False,
 ) -> NDArray:
-    r"""Parallel Proximal Algorithm (PPXA) for minimizing the sum of
-    proximal operators :math:`f_i`:
+    r"""Parallel Proximal Algorithm (PPXA)
 
-    .. math:: \min_\mathbf{x} \sum_{i=1}^m f_i(\mathbf{x}).
+    Solves the following minimization problem using
+    Parallel Proximal Algorithm (PPXA):
+
+    .. math::
+
+        \mathbf{x} = \argmin_\mathbf{x} \sum_{i=1}^m f_i(\mathbf{x})
+
+    where :math:`f_i(\mathbf{x})` are any convex
+    functions that has known proximal operators.
 
     Parameters
     ----------
-    prox_ops : :obj:`List[ProxOperator]`
+    prox_ops : :obj:`list`
         A list of proximable functions :math:`f_1, \ldots, f_m`.
-    x0 : :obj:`np.ndarray` or :obj:`List[np.ndarray]`
-        Initial vector :math:`\mathbf{x}` if 1D :obj:`np.ndarray`,
-        or :math:`\mathbf{x}_{i}` for :math:`i=1,\ldots,m`
-        if :obj:`List[np.ndarray]` or 2D :obj:`np.ndarray`.
+    x0 : :obj:`np.ndarray` or :obj:`list`
+        Initial vector :math:`\mathbf{x}` of all :math:`f_i` if 1D :obj:`np.ndarray`,
+        or :math:`\mathbf{x}_{i}` of each :math:`f_i` for :math:`i=1,\ldots,m`
+        if :obj:`list` or 2D :obj:`np.ndarray`.
     tau : :obj:`float`
         Positive scalar weight
-    eta : :obj:`float`, optional, default=1.0
+    eta : :obj:`float`, optional
         Relaxation parameter (must be between 0 and 2, 0 excluded).
-    weights : :obj:`np.ndarray` or :obj:`List[float]` or :obj:`None`, optional, default=None
+    weights : :obj:`np.ndarray` or :obj:`list` or :obj:`None`, optional
         Weights :math:`\sum_{i=1}^m w_i = 1, \ 0 < w_i < 1`,
         Defaults to None, which means :math:`w_1 = \cdots = w_m = \frac{1}{m}.`
-    max_iter : :obj:`int`, optional, default=1000
+    niter : :obj:`int`, optional
         The maximum number of iterations.
-    tol : :obj:`float`, optional, default=1e-7
-        Absolute torrelance between successive solutions
-        to stop the iteration.
-    callback : :obj:`callable`, optional, default=None
+    tol : :obj:`float`, optional
+        Tolerance on change of the solution (used as stopping criterion).
+        If ``tol=0``, run until ``niter`` is reached.
+    callback : :obj:`callable`, optional
         Function with signature (``callback(x)``) to call after each iteration
         where ``x`` is the current model vector
-    show : :obj:`bool`, optional, default=False
+    show : :obj:`bool`, optional
         Display iterations log
-
 
     Returns
     -------
     x : :obj:`numpy.ndarray`
         Inverted model
 
+    See Also
+    --------
+    ConcensusADMM: Concensus ADMM
 
     Notes
     -----
-    Given a set of proximable functions :math:`f_i`,
-    this class solves the following minimization problem
-    using Parallel Proximal Algorithm (PPXA):
-
-    .. math:: \min_\mathbf{x} \sum_{i=1}^m f_i(\mathbf{x}),
-
-    where :math:`f_i(\mathbf{x})` are any convex
-    functions that has known proximal operators.
-
-    The PPXA can be expressed by the following recursion [1]_, [2]_, [3]_, [4]_,
-    with weights :math:`\sum_{i=1}^m w_i = 1, \ 0 < w_i < 1`,
-    and :math:`0 < \eta < 2`:
+    The Parallel Proximal Algorithm (PPXA) can be expressed by the following
+    recursion [1]_, [2]_, [3]_, [4]_:
 
     * :math:`\mathbf{y}_{i}^{(0)} = \mathbf{x}` or :math:`\mathbf{y}_{i}^{(0)} = \mathbf{x}_{i}` for :math:`i=1,\ldots,m`
     * :math:`\mathbf{x}^{(0)} = \sum_{i=1}^m w_i \mathbf{y}_{i}^{(0)}`
@@ -1874,12 +1873,15 @@ def PPXA(  # pylint: disable=invalid-name
 
       * :math:`\mathbf{x}^{(k+1)} = \mathbf{x}^{(k)} + \eta (\mathbf{p}^{(k)} - \mathbf{x}^{(k)})`
 
+    where :math:`0 < \eta < 2` and
+    :math:`\sum_{i=1}^m w_i = 1, \ 0 < w_i < 1`.
+    In the current implementation, :math:`w_i = 1 / m` when not provided.
 
     References
     ----------
     .. [1] Combettes, P.L., Pesquet, J.-C., 2008. A proximal decomposition
         method for solving convex variational inverse problems. Inverse Problems
-        24, 065014. https://doi.org/10.1088/0266-5611/24/6/065014
+        24, 065014. Algorithm 3.1. https://doi.org/10.1088/0266-5611/24/6/065014
         https://arxiv.org/abs/0807.2617
     .. [2] Combettes, P.L., Pesquet, J.-C., 2011. Proximal Splitting Methods in
         Signal Processing, in Fixed-Point Algorithms for Inverse Problems in
@@ -1892,7 +1894,7 @@ def PPXA(  # pylint: disable=invalid-name
     .. [4] Ryu, E.K., Yin, W., 2022. Large-Scale Convex Optimization: Algorithms
         & Analyses via Monotone Operators. Cambridge University Press,
         Cambridge. Exercise 2.38 https://doi.org/10.1017/9781009160865
-
+        https://large-scale-book.mathopt.com/
 
     """
     if show:
@@ -1962,53 +1964,50 @@ def ConcensusADMM(  # pylint: disable=invalid-name
     callback: Optional[Callable[..., None]] = None,
     show: bool = False,
 ) -> NDArray:
-    r"""Solving a consensus problem with ADMM for minimizing the sum of
-    proximal operators :math:`f_i`:
+    r"""Concensus ADMM
+
+    Solves the following global concensus problem using ADMM:
 
     .. math::
 
-        \min_\mathbf{x} \sum_{i=1}^m f_i(\mathbf{x}) \quad \text{s.t.}
-        \quad \mathbf{x_i} = \mathbf{z} \text{ for } i = 1, \ldots, m
+        \argmin_{\mathbf{x_1}, \mathbf{x_2}, \ldots, \mathbf{x_m}}
+        \sum_{i=1}^m f_i(\mathbf{x}_i) \quad \text{s.t.}
+        \quad \mathbf{x_1} = \mathbf{x_2} = \cdots = \mathbf{x_m}
+
+    where :math:`f_i(\mathbf{x})` are any convex
+    functions that has known proximal operators.
 
     Parameters
     ----------
-    prox_ops : :obj:`List[ProxOperator]`
+    prox_ops : :obj:`list`
         A list of proximable functions :math:`f_1, \ldots, f_m`.
     x0 : :obj:`np.ndarray`
         Initial vector
     tau : :obj:`float`
         Positive scalar weight
-    max_iter : :obj:`int`, optional, default=1000
+    niter : :obj:`int`, optional
         The maximum number of iterations.
-    tol : :obj:`float`, optional, default=1e-7
-        Absolute torrelance between successive solutions
-        to stop the iteration.
-    callback : :obj:`callable`, optional, default=None
+    tol : :obj:`float`, optional
+        Tolerance on change of the solution (used as stopping criterion).
+        If ``tol=0``, run until ``niter`` is reached.
+    callback : :obj:`callable`, optional
         Function with signature (``callback(x)``) to call after each iteration
         where ``x`` is the current model vector
-    show : :obj:`bool`, optional, default=False
+    show : :obj:`bool`, optional
         Display iterations log
-
 
     Returns
     -------
     x : :obj:`numpy.ndarray`
         Inverted model
 
+    See Also
+    --------
+    ADMM: Alternating Direction Method of Multipliers
+    PPXA: Parallel Proximal Algorithm
 
     Notes
     -----
-    Given a set of proximable functions :math:`f_i`,
-    this class solves the following concensus problem using ADMM:
-
-    .. math::
-
-        \min_\mathbf{x} \sum_{i=1}^m f_i(\mathbf{x}) \quad \text{s.t.}
-        \quad \mathbf{x_i} = \mathbf{z} \text{ for } i = 1, \ldots, m
-
-    where :math:`f_i(\mathbf{x})` are any convex
-    functions that has known proximal operators.
-
     The ADMM for the concensus problem can be expressed by the following
     recursion [1]_, [2]_:
 
@@ -2025,6 +2024,7 @@ def ConcensusADMM(  # pylint: disable=invalid-name
 
         * :math:`\mathbf{y}_i^{(k+1)} = \mathbf{y}_i^{(k)} + \mathbf{x}_i^{(k+1)} - \bar{\mathbf{x}}^{(k+1)}`
 
+    The current implementation returns :math:`\bar{\mathbf{x}}`.
 
     References
     ----------
@@ -2032,10 +2032,11 @@ def ConcensusADMM(  # pylint: disable=invalid-name
         Distributed Optimization and Statistical Learning via the Alternating
         Direction Method of Multipliers. Foundations and Trends in Machine Learning,
         Vol. 3, No. 1, pp 1-122. Section 7.1. https://doi.org/10.1561/2200000016
+        https://stanford.edu/~boyd/papers/pdf/admm_distr_stats.pdf
     .. [2] Parikh, N., Boyd, S., 2014. Proximal Algorithms. Foundations and
         Trends in Optimization, Vol. 1, No. 3, pp 127-239.
         Section 5.2.1. https://doi.org/10.1561/2400000003
-
+        https://web.stanford.edu/~boyd/papers/pdf/prox_algs.pdf
 
     """
     if show:
