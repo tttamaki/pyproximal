@@ -48,5 +48,4 @@ on a special use of the Primal-Dual algorithm:
 
 """
 
-from . import primaldual, bregman, segmentation, sr3, palm, pnp
-from .primal import *
+from . import primal, primaldual, bregman, segmentation, sr3, palm, pnp
